@@ -1,0 +1,18 @@
+# Fluxo E2E: registrar uma atividade e receber recompensa (XP).
+# Pré-requisito: onboarding já concluído (rode 01 antes, sem clearState aqui).
+appId: app.adsidera.mobile
+---
+- launchApp
+- assertVisible: 'Registrar atividade'
+- tapOn: 'Registrar atividade'
+- assertVisible: 'A foto é privada'
+- tapOn: 'Musculação'
+- tapOn: 'Moderada'
+- tapOn: 'Salvar'
+# Resumo de recompensa
+- assertVisible:
+    text: 'XP'
+- tapOn: 'Concluir'
+# Diário deve conter o registro
+- tapOn: 'Diário'
+- assertVisible: 'Musculação'

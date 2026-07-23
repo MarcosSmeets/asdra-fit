@@ -1,0 +1,237 @@
+import React, { useEffect, useMemo, useRef } from 'react';
+import { Animated, StyleSheet, View, type GestureResponderEvent } from 'react-native';
+import { getAdariBehaviorProfile } from '@ad-sidera/shared';
+import { useReducedMotion } from '../../theme/ThemeProvider';
+import { adariMotionFor, spriteAnimationFor } from '../../features/my-adari/animationCatalog';
+import type { AdariVisualState } from '../../features/my-adari/state';
+import { AdariActionSprite } from './AdariActionSprite';
+
+export interface AdariAnimatorProps {
+  creatureKey: string;
+  state: AdariVisualState;
+  size: number;
+  evolved?: boolean;
+  interactionEnabled?: boolean;
+  onAffectionGesture?: () => void;
+  accessibilityLabel: string;
+  reduceMotion?: boolean;
+}
+
+export function AdariAnimator({
+  creatureKey,
+  state,
+  size,
+  evolved = false,
+  interactionEnabled = false,
+  onAffectionGesture,
+  accessibilityLabel,
+  reduceMotion = false,
+}: AdariAnimatorProps): React.ReactElement {
+  const osReducedMotion = useReducedMotion();
+  const reduced = reduceMotion || osReducedMotion;
+  const profile = useMemo(() => getAdariBehaviorProfile(creatureKey), [creatureKey]);
+  const scale = useRef(new Animated.Value(1)).current;
+  const translateX = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(0)).current;
+  const rotate = useRef(new Animated.Value(0)).current;
+  const glow = useRef(new Animated.Value(0.16)).current;
+  const blink = useRef(new Animated.Value(1)).current;
+  const gestureStarted = useRef(false);
+
+  useEffect(() => {
+    spriteAnimationFor(creatureKey, state);
+    const motion = adariMotionFor(state);
+    scale.stopAnimation();
+    translateX.stopAnimation();
+    translateY.stopAnimation();
+    rotate.stopAnimation();
+    glow.stopAnimation();
+    scale.setValue(1);
+    translateX.setValue(0);
+    translateY.setValue(0);
+    rotate.setValue(0);
+    glow.setValue(0.16);
+
+    if (reduced) {
+      scale.setValue(state === 'resting' || state === 'sleeping' ? 0.96 : 1);
+      translateX.setValue(0);
+      translateY.setValue(state === 'resting' || state === 'sleeping' ? 8 : 0);
+      return undefined;
+    }
+
+    let animation: Animated.CompositeAnimation;
+    if (state === 'idle') {
+      animation = Animated.loop(Animated.sequence([
+        Animated.parallel([
+          Animated.timing(scale, { toValue: 1.025, duration: 1100, useNativeDriver: true }),
+          Animated.timing(translateY, { toValue: -4, duration: 1100, useNativeDriver: true }),
+        ]),
+        Animated.parallel([
+          Animated.timing(scale, { toValue: 1, duration: 1100, useNativeDriver: true }),
+          Animated.timing(translateY, { toValue: 0, duration: 1100, useNativeDriver: true }),
+        ]),
+      ]));
+    } else if (['happy', 'excitedAfterActivity', 'victory'].includes(state)) {
+      animation = Animated.sequence([
+        Animated.timing(scale, { toValue: 0.96, duration: motion.anticipationMs, useNativeDriver: true }),
+        Animated.parallel([
+          Animated.spring(scale, { toValue: 1.1, speed: 18, bounciness: 10, useNativeDriver: true }),
+          Animated.sequence([
+            Animated.timing(translateY, { toValue: -18, duration: motion.actionMs / 2, useNativeDriver: true }),
+            Animated.timing(translateY, { toValue: 0, duration: motion.actionMs / 2, useNativeDriver: true }),
+          ]),
+        ]),
+        Animated.timing(scale, { toValue: 1, duration: motion.returnMs, useNativeDriver: true }),
+      ]);
+    } else if (state === 'receivingAffection') {
+      animation = Animated.sequence([
+        Animated.timing(rotate, { toValue: -1, duration: motion.anticipationMs, useNativeDriver: true }),
+        Animated.parallel([
+          Animated.spring(scale, { toValue: 1.08, speed: 16, bounciness: 6, useNativeDriver: true }),
+          Animated.timing(glow, { toValue: 0.5, duration: motion.actionMs, useNativeDriver: true }),
+        ]),
+        Animated.delay(motion.reactionMs),
+        Animated.parallel([
+          Animated.timing(scale, { toValue: 1, duration: motion.returnMs, useNativeDriver: true }),
+          Animated.timing(rotate, { toValue: 0, duration: motion.returnMs, useNativeDriver: true }),
+          Animated.timing(glow, { toValue: 0.16, duration: motion.returnMs, useNativeDriver: true }),
+        ]),
+      ]);
+    } else if (state === 'eating') {
+      animation = Animated.sequence([
+        Animated.timing(translateY, { toValue: 9, duration: motion.anticipationMs, useNativeDriver: true }),
+        Animated.loop(Animated.sequence([
+          Animated.timing(scale, { toValue: 0.97, duration: 110, useNativeDriver: true }),
+          Animated.timing(scale, { toValue: 1.03, duration: 110, useNativeDriver: true }),
+        ]), { iterations: 3 }),
+        Animated.parallel([
+          Animated.timing(scale, { toValue: 1, duration: motion.returnMs, useNativeDriver: true }),
+          Animated.timing(translateY, { toValue: 0, duration: motion.returnMs, useNativeDriver: true }),
+        ]),
+      ]);
+    } else if (['refusingFood', 'takingDamage', 'defeat'].includes(state)) {
+      animation = Animated.sequence([
+        Animated.timing(translateX, { toValue: -10, duration: 70, useNativeDriver: true }),
+        Animated.timing(translateX, { toValue: 10, duration: 70, useNativeDriver: true }),
+        Animated.timing(translateX, { toValue: -7, duration: 70, useNativeDriver: true }),
+        Animated.timing(translateX, { toValue: 0, duration: 90, useNativeDriver: true }),
+      ]);
+    } else if (['curious', 'talkingReaction', 'askingForWalk'].includes(state)) {
+      animation = Animated.sequence([
+        Animated.parallel([
+          Animated.timing(rotate, { toValue: 1, duration: motion.actionMs, useNativeDriver: true }),
+          Animated.timing(scale, { toValue: 1.045, duration: motion.actionMs, useNativeDriver: true }),
+          Animated.timing(glow, { toValue: 0.34, duration: motion.actionMs, useNativeDriver: true }),
+        ]),
+        Animated.delay(motion.reactionMs),
+        Animated.parallel([
+          Animated.timing(rotate, { toValue: 0, duration: motion.returnMs, useNativeDriver: true }),
+          Animated.timing(scale, { toValue: 1, duration: motion.returnMs, useNativeDriver: true }),
+          Animated.timing(glow, { toValue: 0.16, duration: motion.returnMs, useNativeDriver: true }),
+        ]),
+      ]);
+    } else if (['resting', 'sleeping', 'tired'].includes(state)) {
+      animation = Animated.loop(Animated.sequence([
+        Animated.parallel([
+          Animated.timing(scale, { toValue: 0.95, duration: motion.actionMs * 2, useNativeDriver: true }),
+          Animated.timing(translateY, { toValue: 10, duration: motion.actionMs * 2, useNativeDriver: true }),
+          Animated.timing(glow, { toValue: 0.1, duration: motion.actionMs * 2, useNativeDriver: true }),
+        ]),
+        Animated.parallel([
+          Animated.timing(scale, { toValue: 0.975, duration: motion.actionMs * 2, useNativeDriver: true }),
+          Animated.timing(translateY, { toValue: 7, duration: motion.actionMs * 2, useNativeDriver: true }),
+        ]),
+      ]));
+    } else if (state === 'attacking') {
+      animation = Animated.sequence([
+        Animated.timing(translateX, { toValue: -10, duration: motion.anticipationMs, useNativeDriver: true }),
+        Animated.timing(translateX, { toValue: 26, duration: motion.actionMs, useNativeDriver: true }),
+        Animated.timing(translateX, { toValue: 0, duration: motion.returnMs, useNativeDriver: true }),
+      ]);
+    } else if (state === 'defending') {
+      animation = Animated.sequence([
+        Animated.parallel([
+          Animated.timing(scale, { toValue: 0.94, duration: motion.anticipationMs, useNativeDriver: true }),
+          Animated.timing(glow, { toValue: 0.62, duration: motion.actionMs, useNativeDriver: true }),
+        ]),
+        Animated.delay(motion.reactionMs),
+        Animated.parallel([
+          Animated.timing(scale, { toValue: 1, duration: motion.returnMs, useNativeDriver: true }),
+          Animated.timing(glow, { toValue: 0.16, duration: motion.returnMs, useNativeDriver: true }),
+        ]),
+      ]);
+    } else {
+      animation = Animated.sequence([
+        Animated.timing(scale, { toValue: 1.04, duration: motion.actionMs, useNativeDriver: true }),
+        Animated.timing(scale, { toValue: 1, duration: motion.returnMs, useNativeDriver: true }),
+      ]);
+    }
+    animation.start();
+    return () => animation.stop();
+  }, [creatureKey, glow, reduced, rotate, scale, state, translateX, translateY]);
+
+  useEffect(() => {
+    if (reduced || state !== 'idle') return undefined;
+    const blinkLoop = Animated.loop(Animated.sequence([
+      Animated.delay(2200 + Math.round(profile.curiosityLevel * 900)),
+      Animated.timing(blink, { toValue: 0.965, duration: 65, useNativeDriver: true }),
+      Animated.timing(blink, { toValue: 1, duration: 85, useNativeDriver: true }),
+    ]));
+    blinkLoop.start();
+    return () => blinkLoop.stop();
+  }, [blink, profile.curiosityLevel, reduced, state]);
+
+  const startGesture = (_event: GestureResponderEvent): void => {
+    if (!interactionEnabled || gestureStarted.current) return;
+    gestureStarted.current = true;
+    onAffectionGesture?.();
+  };
+  const moveGesture = (event: GestureResponderEvent): void => {
+    if (reduced) return;
+    const width = Math.max(1, event.nativeEvent.locationX);
+    rotate.setValue(width > size / 2 ? 0.35 : -0.35);
+  };
+  const endGesture = (): void => { gestureStarted.current = false; };
+  const degrees = rotate.interpolate({ inputRange: [-1, 1], outputRange: ['-5deg', '5deg'] });
+
+  return (
+    <View
+      accessible
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      accessibilityHint="Toque ou deslize para fazer carinho."
+      accessibilityState={{ disabled: !interactionEnabled }}
+      onStartShouldSetResponder={() => interactionEnabled}
+      onMoveShouldSetResponder={() => interactionEnabled}
+      onResponderGrant={startGesture}
+      onResponderMove={moveGesture}
+      onResponderRelease={endGesture}
+      onResponderTerminate={endGesture}
+      style={{ width: size, height: size, alignItems: 'center', justifyContent: 'flex-end' }}
+    >
+      <Animated.View pointerEvents="none" style={[styles.glow, { width: size * 0.74, height: size * 0.3, opacity: glow }]} />
+      <Animated.View
+        pointerEvents="none"
+        style={{ transform: [{ translateX }, { translateY }, { rotate: degrees }, { scale }, { scaleY: blink }] }}
+      >
+        <AdariActionSprite
+          creatureKey={creatureKey}
+          state={state}
+          size={size}
+          evolved={evolved}
+          reduceMotion={reduced}
+          accessibilityLabel={accessibilityLabel}
+        />
+      </Animated.View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  glow: {
+    position: 'absolute',
+    bottom: '4%',
+    borderRadius: 999,
+    backgroundColor: '#F4D88A',
+  },
+});

@@ -1,0 +1,28 @@
+# Fluxo E2E: primeira abertura → modo local → onboarding → escolher criatura.
+# Requer device/emulador com o app instalado. Rode: maestro test .maestro/01-local-onboarding.yaml
+appId: app.adsidera.mobile
+---
+- launchApp:
+    clearState: true
+- assertVisible: 'Evolua junto com seu companheiro'
+- tapOn: 'Começar'
+- assertVisible: 'Ad Sidera'
+- tapOn: 'Começar em modo local'
+# Onboarding
+- assertVisible: 'Nome ou apelido'
+- tapOn:
+    id: 'onboarding-name-input'
+- inputText: 'Viajante'
+- tapOn: 'Continuar'
+- tapOn: 'Criar constância'
+- tapOn: 'Continuar'
+- tapOn: 'Continuar' # meta padrão
+- tapOn: 'Musculação'
+- tapOn: 'Continuar'
+- tapOn: 'Continuar' # dias
+- tapOn: 'Continuar' # notificações
+- tapOn: 'Terravok'
+- tapOn: 'Continuar'
+- tapOn: 'Concluir'
+# Área principal
+- assertVisible: 'Registrar atividade'

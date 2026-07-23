@@ -1,0 +1,22 @@
+# Fluxo E2E: enfrentar o primeiro adversário offline e explorar a jornada,
+# depois converter em conta e criar uma liga (requer backend no ar).
+appId: app.adsidera.mobile
+---
+- launchApp
+- tapOn: 'Jornada'
+- assertVisible: 'Planície Nascente'
+- tapOn: 'Espírito Errante'
+- assertVisible: 'Atacar'
+- repeat:
+    times: 10
+    commands:
+      - tapOn:
+          text: 'Atacar'
+          optional: true
+- assertVisible:
+    text: 'Continuar'
+    optional: true
+# Converter perfil local em conta e criar liga
+- tapOn: 'Perfil'
+- tapOn: 'Liga'
+- assertVisible: 'Ligas privadas exigem uma conta'

@@ -1,0 +1,48 @@
+{
+  "expo": {
+    "name": "Ad Sidera",
+    "slug": "ad-sidera",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "adsidera",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": false,
+    "splash": {
+      "backgroundColor": "#0E1428"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "app.adsidera.mobile",
+      "infoPlist": {
+        "NSCameraUsageDescription": "O Ad Sidera usa a câmera apenas para você registrar treinos com fotos privadas, guardadas somente neste dispositivo.",
+        "NSPhotoLibraryUsageDescription": "O Ad Sidera acessa a galeria apenas para anexar fotos privadas aos seus registros, guardadas somente neste dispositivo."
+      }
+    },
+    "android": {
+      "package": "app.adsidera.mobile",
+      "adaptiveIcon": {
+        "backgroundColor": "#0E1428"
+      }
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "O Ad Sidera acessa a galeria apenas para anexar fotos privadas aos seus registros."
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "O Ad Sidera usa a câmera apenas para registrar treinos com fotos privadas."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": false
+    }
+  }
+}
