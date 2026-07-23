@@ -1,0 +1,30 @@
+{
+  "name": "ad-sidera",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Ad Sidera — aplicativo mobile local-first de hábitos onde o usuário evolui junto com sua criatura.",
+  "packageManager": "pnpm@9.15.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "turbo run dev",
+    "dev:mobile": "pnpm --filter @ad-sidera/mobile dev",
+    "dev:api": "pnpm --filter @ad-sidera/api start:dev",
+    "db:generate": "pnpm --filter @ad-sidera/api db:generate",
+    "db:migrate": "pnpm --filter @ad-sidera/api db:migrate",
+    "db:seed": "pnpm --filter @ad-sidera/api db:seed",
+    "test": "turbo run test",
+    "test:mobile": "pnpm --filter @ad-sidera/mobile test",
+    "test:api": "pnpm --filter @ad-sidera/api test",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "build": "turbo run build",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\""
+  },
+  "devDependencies": {
+    "prettier": "^3.4.2",
+    "turbo": "^2.3.3",
+    "typescript": "^5.7.2"
+  }
+}

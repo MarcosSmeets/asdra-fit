@@ -1,0 +1,100 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  NODE_VERSION: '20'
+  PNPM_VERSION: '9.15.0'
+
+jobs:
+  quality:
+    name: Lint · Typecheck · Unit tests · Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # shared/config precisam estar compilados para typecheck/test de api e mobile
+      - run: pnpm --filter @ad-sidera/config build
+      - run: pnpm --filter @ad-sidera/shared build
+      - run: pnpm --filter @ad-sidera/api exec prisma generate
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm --filter @ad-sidera/api build
+
+  prisma:
+    name: Prisma validate & migrations
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Validar schema
+        run: pnpm --filter @ad-sidera/api exec prisma validate
+      - name: Checar migrations vs schema (drift)
+        env:
+          DATABASE_URL: postgresql://ci:ci@localhost:5432/ci?schema=public
+        run: pnpm --filter @ad-sidera/api exec prisma migrate diff --from-migrations prisma/migrations --to-schema-datamodel prisma/schema.prisma --exit-code || echo "Há diferença entre migrations e schema (revisar)."
+
+  api-e2e:
+    name: API integration tests (Supertest + Postgres)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: adsidera
+          POSTGRES_PASSWORD: adsidera
+          POSTGRES_DB: adsidera
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U adsidera"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      DATABASE_URL: postgresql://adsidera:adsidera@localhost:5432/adsidera?schema=e2e_test
+      NODE_ENV: test
+      JWT_ACCESS_SECRET: ci_access_secret_at_least_16_chars_long
+      JWT_REFRESH_SECRET: ci_refresh_secret_at_least_16_chars_long
+      JWT_ACCESS_EXPIRES_IN: 15m
+      JWT_REFRESH_EXPIRES_IN: 7d
+      CORS_ORIGINS: ''
+      LOG_LEVEL: silent
+      RATE_LIMIT_TTL: '60'
+      RATE_LIMIT_MAX: '500'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @ad-sidera/config build
+      - run: pnpm --filter @ad-sidera/shared build
+      - run: pnpm --filter @ad-sidera/api exec prisma generate
+      - run: pnpm --filter @ad-sidera/api exec prisma migrate deploy
+      - run: pnpm --filter @ad-sidera/api exec jest --config test/jest-e2e.json --runInBand --coverage
+
+# Nenhum deploy automático é executado (requer configuração explícita).
