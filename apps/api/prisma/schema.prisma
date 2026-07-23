@@ -1,0 +1,595 @@
+// Ad Sidera — modelo de dados (PostgreSQL). Datas SEMPRE em UTC.
+// Fotos NUNCA são armazenadas aqui (apenas o booleano hasLocalPhoto).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserStatus {
+  active
+  deleted
+}
+
+enum Platform {
+  ios
+  android
+  web
+}
+
+enum Archetype {
+  forca
+  resistencia
+  equilibrio
+}
+
+enum ActivityType {
+  musculacao
+  corrida
+  caminhada
+  ciclismo
+  natacao
+  esporte_coletivo
+  funcional
+  mobilidade
+  outro
+}
+
+enum Intensity {
+  leve
+  moderada
+  intensa
+}
+
+enum Mood {
+  pessimo
+  ruim
+  neutro
+  bom
+  otimo
+}
+
+enum LeagueRole {
+  admin
+  member
+}
+
+enum LeagueStatus {
+  active
+  archived
+}
+
+enum SeasonStatus {
+  active
+  finalized
+}
+
+enum SyncEntityType {
+  activity
+  weekly_goal
+  user_creature
+  weekly_progress
+  profile
+  battle_session
+  adari_interaction
+  observatory_state
+  food_inventory
+}
+
+enum SyncOperationType {
+  upsert
+  delete
+}
+
+enum SyncResult {
+  processed
+  duplicate
+  conflict
+  failed
+}
+
+model User {
+  id           String     @id @default(uuid())
+  email        String     @unique
+  passwordHash String
+  status       UserStatus @default(active)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  deletedAt    DateTime?
+
+  profile                Profile?
+  devices                Device[]
+  refreshTokens          RefreshToken[]
+  userCreature           UserCreature?
+  weeklyGoals            WeeklyGoal[]
+  activities             Activity[]
+  weeklyProgress         WeeklyProgress[]
+  ownedLeagues           League[]                @relation("LeagueOwner")
+  leagueMemberships      LeagueMember[]
+  rankingEntries         LeagueRankingEntry[]
+  notificationPreference NotificationPreference?
+  syncOperations         SyncOperation[]
+  auditLogs              AuditLog[]
+  battleSessions         BattleSession[]
+  dailyBattleProgress    DailyBattleProgress[]
+  duelsInitiated         DuelSession[]           @relation("DuelChallenger")
+  duelsReceived          DuelSession[]           @relation("DuelOpponent")
+  foodInventory          UserFoodInventory[]
+  adariInteractions      AdariInteraction[]
+  observatoryState       ObservatoryState?
+  localProfileConversion LocalProfileConversion?
+
+  @@index([status])
+}
+
+model LocalProfileConversion {
+  id             String   @id @default(uuid())
+  operationId    String   @unique
+  localProfileId String
+  userId         String   @unique
+  status         String   @default("creatingAccount")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([localProfileId])
+}
+
+model Profile {
+  id                 String   @id @default(uuid())
+  userId             String   @unique
+  displayName        String
+  timezone           String   @default("UTC")
+  locale             String   @default("pt-BR")
+  avatarType         String   @default("star")
+  avatarAppearance   Json?
+  shareCreatureLevel Boolean  @default(true)
+  goal               String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Device {
+  id             String   @id @default(uuid())
+  userId         String
+  installationId String
+  platform       Platform
+  pushToken      String?
+  lastSeenAt     DateTime @default(now())
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, installationId])
+  @@index([userId])
+}
+
+model CreatureDefinition {
+  id                    String    @id @default(uuid())
+  key                   String    @unique
+  name                  String
+  archetype             Archetype
+  affinity              String
+  baseStats             Json
+  abilities             Json
+  evolutionDefinitionKey String?
+  contentVersion        Int       @default(1)
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+}
+
+model UserCreature {
+  id                  String   @id @default(uuid())
+  userId              String   @unique
+  creatureKey         String
+  nickname            String?
+  level               Int      @default(1)
+  xp                  Int      @default(0)
+  evolutionStage      Int      @default(0)
+  strength            Int      @default(0)
+  endurance           Int      @default(0)
+  agility             Int      @default(0)
+  discipline          Int      @default(0)
+  recovery            Int      @default(0)
+  spirit              Int      @default(0)
+  health              Int      @default(100)
+  /// `energy` = Vigor atual (recurso de descanso).
+  energy              Int      @default(0)
+  maxVigor            Int      @default(100)
+  vigorRecoveryRate   Float    @default(5)
+  lastVigorCalculationAt DateTime?
+  bond                Int      @default(0)
+  satiety             Int      @default(60)
+  lastSatietyCalculationAt DateTime?
+  activeBehaviorState String   @default("idle")
+  lastInteractionAt   DateTime?
+  equippedAbilities   String[] @default([])
+  defeatedMilestones  String[] @default([])
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  interactions AdariInteraction[]
+}
+
+model FoodDefinition {
+  id                    String   @id
+  key                   String   @unique
+  name                  String
+  description           String
+  satietyValue          Int
+  bondValue             Int
+  preferredByAdariKeys  String[] @default([])
+  assetKey              String
+  contentVersion        Int      @default(1)
+  active                Boolean  @default(true)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  inventories UserFoodInventory[]
+  interactions AdariInteraction[]
+}
+
+model UserFoodInventory {
+  id               String   @id @default(uuid())
+  userId           String
+  foodDefinitionId String
+  quantity         Int      @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  foodDefinition FoodDefinition @relation(fields: [foodDefinitionId], references: [id])
+
+  @@unique([userId, foodDefinitionId])
+  @@index([userId])
+}
+
+model AdariInteraction {
+  id                 String   @id @default(uuid())
+  clientGeneratedId  String
+  userId             String
+  userAdariId        String
+  interactionType    String
+  foodDefinitionId   String?
+  bondGranted        Int      @default(0)
+  satietyGranted     Int      @default(0)
+  occurredAt         DateTime
+  localDate          String
+  timezone           String
+  calculationVersion Int      @default(1)
+  serverFlagged      Boolean  @default(false)
+  createdAt          DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userAdari UserCreature @relation(fields: [userAdariId], references: [id], onDelete: Cascade)
+  foodDefinition FoodDefinition? @relation(fields: [foodDefinitionId], references: [id])
+
+  @@unique([userId, clientGeneratedId])
+  @@index([userAdariId, localDate, interactionType])
+  @@index([userId, occurredAt])
+}
+
+model ObservatoryState {
+  id                  String   @id @default(uuid())
+  userId              String   @unique
+  selectedControlMode String   @default("tap")
+  lastSafePlayerPosition Json?
+  unlockedObjects     String[] @default([])
+  seenDialogueKeys    String[] @default([])
+  reduceMotion        Boolean  @default(false)
+  particlesEnabled    Boolean  @default(true)
+  movementSpeed       Float    @default(1)
+  qualityMode         String   @default("automatic")
+  musicEnabled        Boolean  @default(false)
+  effectsEnabled      Boolean  @default(true)
+  hapticsEnabled      Boolean  @default(true)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// Sessão de batalha PvE (registro local-first sincronizado). O servidor re-deriva
+// a recompensa (nunca confia no XP/vitórias do cliente) e SINALIZA excessos.
+model BattleSession {
+  id                       String   @id @default(uuid())
+  userId                   String
+  clientGeneratedId        String
+  battleType               String   @default("pve")
+  adversaryId              String?
+  dayKey                   String
+  result                   String
+  rewarded                 Boolean  @default(false)
+  xpGranted                Int      @default(0)
+  vigorSpent               Int      @default(0)
+  seed                     Int?
+  turns                    Int?
+  /// true quando o cliente declarou recompensa acima do teto re-derivado no servidor.
+  serverFlagged            Boolean  @default(false)
+  battleCalculationVersion Int      @default(1)
+  createdAt                DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, clientGeneratedId])
+  @@index([userId, dayKey])
+}
+
+// Progresso diário de PvE materializado no servidor (limite de vitórias/XP por dia).
+model DailyBattleProgress {
+  id           String   @id @default(uuid())
+  userId       String
+  dayKey       String
+  rewardedWins Int      @default(0)
+  xpGranted    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, dayKey])
+  @@index([userId])
+}
+
+// Duelo amistoso entre membros de liga (server-authoritative, determinístico).
+// Sem XP/atributos/liga: só diversão. Snapshots dos dois Adaris no momento do duelo.
+model DuelSession {
+  id                 String   @id @default(uuid())
+  challengerId       String
+  opponentId         String
+  leagueId           String?
+  dayKey             String
+  seed               Int
+  /// 'challenger' | 'opponent' | 'draw'
+  winner             String
+  rounds             Int
+  challengerSnapshot Json
+  opponentSnapshot   Json
+  vigorSpent         Int      @default(0)
+  createdAt          DateTime @default(now())
+
+  challenger User @relation("DuelChallenger", fields: [challengerId], references: [id], onDelete: Cascade)
+  opponent   User @relation("DuelOpponent", fields: [opponentId], references: [id], onDelete: Cascade)
+
+  @@index([challengerId, opponentId, dayKey])
+  @@index([opponentId])
+  @@index([challengerId])
+}
+
+model WeeklyGoal {
+  id                   String    @id @default(uuid())
+  userId               String
+  targetCount          Int
+  preferredDays        Int[]     @default([])
+  activityTypes        String[]  @default([])
+  startsAt             DateTime
+  endsAt               DateTime?
+  active               Boolean   @default(true)
+  allowExtraActivities Boolean   @default(true)
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, active])
+}
+
+model Activity {
+  id                String        @id @default(uuid())
+  clientGeneratedId String
+  userId            String
+  activityType      ActivityType
+  occurredAt        DateTime
+  durationMinutes   Int
+  perceivedIntensity Intensity
+  notes             String?
+  location          String?
+  moodBefore        Mood?
+  moodAfter         Mood?
+  hasLocalPhoto     Boolean       @default(false)
+  remotePhotoKey    String?
+  isScored          Boolean       @default(true)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  deletedAt         DateTime?
+
+  user   User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reward ActivityReward?
+
+  @@unique([userId, clientGeneratedId])
+  @@index([userId, occurredAt])
+  @@index([userId, deletedAt])
+}
+
+model ActivityReward {
+  id                 String   @id @default(uuid())
+  activityId         String   @unique
+  xpGranted          Int
+  energyGranted      Int
+  attributeChanges   Json
+  calculatedAt       DateTime @default(now())
+  calculationVersion Int
+
+  activity Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+}
+
+model WeeklyProgress {
+  id                 String    @id @default(uuid())
+  userId             String
+  weekKey            String
+  weekStart          DateTime
+  weekEnd            DateTime
+  targetCount        Int
+  validActivityCount Int       @default(0)
+  percentage         Float     @default(0)
+  completed          Boolean   @default(false)
+  completedAt        DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, weekKey])
+  @@index([userId])
+}
+
+model League {
+  id          String       @id @default(uuid())
+  ownerId     String
+  name        String
+  description String?
+  maxMembers  Int          @default(20)
+  status      LeagueStatus @default(active)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  owner   User           @relation("LeagueOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  invites LeagueInvite[]
+  members LeagueMember[]
+  seasons LeagueSeason[]
+
+  @@index([ownerId])
+}
+
+model LeagueInvite {
+  id         String    @id @default(uuid())
+  leagueId   String
+  code       String    @unique
+  active     Boolean   @default(true)
+  expiresAt  DateTime?
+  usageLimit Int?
+  usageCount Int       @default(0)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  league League @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+
+  @@index([leagueId])
+}
+
+model LeagueMember {
+  id       String     @id @default(uuid())
+  leagueId String
+  userId   String
+  role     LeagueRole @default(member)
+  joinedAt DateTime   @default(now())
+  leftAt   DateTime?
+
+  league League @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([leagueId, userId])
+  @@index([userId])
+}
+
+model LeagueSeason {
+  id          String       @id @default(uuid())
+  leagueId    String
+  weekKey     String
+  startsAt    DateTime
+  endsAt      DateTime
+  status      SeasonStatus @default(active)
+  finalizedAt DateTime?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  league  League               @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  entries LeagueRankingEntry[]
+
+  @@unique([leagueId, weekKey])
+  @@index([leagueId, status])
+}
+
+model LeagueRankingEntry {
+  id              String   @id @default(uuid())
+  seasonId        String
+  userId          String
+  goalPercentage  Float
+  streakBonus     Float
+  completionBonus Float
+  finalScore      Float
+  position        Int
+  calculatedAt    DateTime @default(now())
+
+  season LeagueSeason @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  user   User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([seasonId, userId])
+  @@index([seasonId, position])
+}
+
+model NotificationPreference {
+  id                      String   @id @default(uuid())
+  userId                  String   @unique
+  enabled                 Boolean  @default(true)
+  activityReminderEnabled Boolean  @default(true)
+  weeklyGoalEnabled       Boolean  @default(true)
+  evolutionEnabled        Boolean  @default(true)
+  leagueEnabled           Boolean  @default(true)
+  quietHoursStart         String?
+  quietHoursEnd           String?
+  reminderTime            String   @default("18:00")
+  preferredDays           Int[]    @default([])
+  timezone                String   @default("UTC")
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model RefreshToken {
+  id                String    @id @default(uuid())
+  userId            String
+  tokenHash         String    @unique
+  deviceId          String?
+  expiresAt         DateTime
+  revokedAt         DateTime?
+  replacedByTokenId String?
+  createdAt         DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model SyncOperation {
+  id            String            @id @default(uuid())
+  userId        String
+  deviceId      String?
+  operationId   String            @unique
+  entityType    SyncEntityType
+  entityId      String
+  operationType SyncOperationType
+  payloadHash   String
+  result        SyncResult
+  processedAt   DateTime          @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model AuditLog {
+  id            String   @id @default(uuid())
+  userId        String?
+  action        String
+  entityType    String?
+  entityId      String?
+  metadata      Json?
+  correlationId String?
+  createdAt     DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([action])
+}
