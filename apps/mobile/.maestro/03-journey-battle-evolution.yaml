@@ -1,6 +1,6 @@
 # Fluxo E2E offline: Jornada → primeiro combate → Linha Evolutiva.
 # Pré-requisito: onboarding concluído. Não exige API, conta ou Liga.
-appId: app.adsidera.mobile
+appId: app.asdrafit.mobile
 ---
 - launchApp
 - tapOn: 'Jornada'

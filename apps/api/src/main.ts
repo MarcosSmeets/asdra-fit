@@ -1,3 +1,4 @@
+import { APP_NAME } from '@ad-sidera/config';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
@@ -29,8 +30,8 @@ async function bootstrap(): Promise<void> {
   // Swagger / OpenAPI em /docs (integrado com schemas Zod).
   patchNestJsSwagger();
   const swaggerConfig = new DocumentBuilder()
-    .setTitle('Ad Sidera API')
-    .setDescription('API REST do Ad Sidera — hábitos local-first com criatura companheira.')
+    .setTitle(`${APP_NAME} API`)
+    .setDescription(`API REST do ${APP_NAME} — hábitos local-first com criatura companheira.`)
     .setVersion('1.0')
     .addBearerAuth()
     .build();

@@ -1,12 +1,12 @@
 # Fluxo E2E: primeira abertura → modo local → onboarding → escolher criatura.
 # Requer device/emulador com o app instalado. Rode: maestro test .maestro/01-local-onboarding.yaml
-appId: app.adsidera.mobile
+appId: app.asdrafit.mobile
 ---
 - launchApp:
     clearState: true
 - assertVisible: 'Evolua junto com seu companheiro'
 - tapOn: 'Começar'
-- assertVisible: 'Ad Sidera'
+- assertVisible: 'Asdra Fit'
 - tapOn: 'Começar em modo local'
 # Onboarding
 - assertVisible: 'Nome ou apelido'

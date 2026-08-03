@@ -1,4 +1,4 @@
-// Ad Sidera — modelo de dados (PostgreSQL). Datas SEMPRE em UTC.
+// Asdra Fit — modelo de dados (PostgreSQL). Datas SEMPRE em UTC.
 // Fotos NUNCA são armazenadas aqui (apenas o booleano hasLocalPhoto).
 
 generator client {

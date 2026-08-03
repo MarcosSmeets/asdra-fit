@@ -3,7 +3,7 @@
  * As fórmulas e seus coeficientes vivem em `@ad-sidera/shared`.
  */
 
-export const APP_NAME = 'Ad Sidera';
+export const APP_NAME = 'Asdra Fit';
 export const APP_TAGLINE = 'Rumo às estrelas através da disciplina diária.';
 
 export const API_VERSION = 'v1';

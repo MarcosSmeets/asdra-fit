@@ -1,4 +1,5 @@
 import * as Notifications from 'expo-notifications';
+import { BRAND } from '../constants/brand';
 import { getDatabase } from '../db/database';
 import { appStateRepository } from '../db/repositories/appStateRepository';
 
@@ -74,7 +75,7 @@ export async function scheduleWeeklyReminders(config: ReminderConfig): Promise<b
   for (const weekday of config.weekdays) {
     await Notifications.scheduleNotificationAsync({
       content: {
-        title: 'Ad Sidera',
+        title: BRAND.appName,
         body: ENCOURAGING_REMINDERS[weekday % ENCOURAGING_REMINDERS.length] ?? ENCOURAGING_REMINDERS[0]!,
       },
       trigger: {

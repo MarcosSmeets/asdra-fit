@@ -7,7 +7,7 @@
  * disciplina, da constância e das ações reais de seus Exploradores.
  */
 export const BRAND = {
-  appName: 'Ad Sidera',
+  appName: 'Asdra Fit',
   tagline: 'Rumo às estrelas através da disciplina diária.',
   companionSingular: 'Adari',
   companionPlural: 'Adaris',

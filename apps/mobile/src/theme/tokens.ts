@@ -1,5 +1,5 @@
 /**
- * Design tokens do Ad Sidera (v3 — Build 5). Identidade oficial: RPG futurista
+ * Design tokens do Asdra Fit (v3 — Build 5). Identidade oficial: RPG futurista
  * em pixel art 32-bit — cosmos profundo, tecnologia astral, energia estelar.
  * Tema ESCURO ÚNICO (decisão de produto do Build 5). Nenhum hexadecimal fora
  * deste arquivo. Sem gradientes suaves nem neon excessivo (spec §7).

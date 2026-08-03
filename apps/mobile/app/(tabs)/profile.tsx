@@ -13,7 +13,7 @@ import {
   SyncStatus,
   Text,
 } from '@/components';
-import { companionDisplayName } from '@/constants/brand';
+import { BRAND, companionDisplayName } from '@/constants/brand';
 import { ONLINE_FEATURES_ENABLED } from '@/config/features';
 import { useOnline } from '@/hooks/useOnline';
 import { useGameStore } from '@/stores/gameStore';
@@ -252,7 +252,7 @@ export default function ProfileScreen(): React.ReactElement {
         />
         <RowDivider />
         <NavRow
-          label="Sobre o Ad Sidera"
+          label={`Sobre o ${BRAND.appName}`}
           description="Missão, versão e conteúdo original"
           onPress={() => router.push('/settings/about')}
           accessibilityHint="Abre a tela sobre o app."

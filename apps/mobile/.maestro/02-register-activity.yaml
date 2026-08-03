@@ -1,6 +1,6 @@
 # Fluxo E2E: registrar uma atividade e receber recompensa (XP).
 # Pré-requisito: onboarding já concluído (rode 01 antes, sem clearState aqui).
-appId: app.adsidera.mobile
+appId: app.asdrafit.mobile
 ---
 - launchApp
 - assertVisible: 'Registrar atividade'

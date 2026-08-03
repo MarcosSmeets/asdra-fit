@@ -185,11 +185,11 @@ async function seedDemoActivitiesAndProgress(userId: string, timezone: string): 
 }
 
 async function seedDemoLeague(ownerId: string, memberId: string): Promise<void> {
-  const existing = await prisma.league.findFirst({ where: { name: 'Liga Demo Ad Sidera' } });
+  const existing = await prisma.league.findFirst({ where: { name: 'Liga Demo Asdra Fit' } });
   const league =
     existing ??
     (await prisma.league.create({
-      data: { ownerId, name: 'Liga Demo Ad Sidera', description: 'Liga de demonstração.', maxMembers: 20 },
+      data: { ownerId, name: 'Liga Demo Asdra Fit', description: 'Liga de demonstração.', maxMembers: 20 },
     }));
 
   await prisma.leagueMember.upsert({

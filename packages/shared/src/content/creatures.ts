@@ -10,7 +10,7 @@ import type { AdariEvolutionLine, AdariStageDefinition, CreatureDefinition } fro
 
 /**
  * Três linhas evolutivas 100% ORIGINAIS (sem semelhança com IP existente).
- * Tema Ad Sidera: companheiros que evoluem "rumo às estrelas" pela disciplina.
+ * Tema Asdra Fit: companheiros que evoluem "rumo às estrelas" pela disciplina.
  * Build 5: quatro estágios fixos por linha (BASE → EV 1 → EV 2 → PERFECT).
  * Nomes intermediários são CONTEÚDO — nunca hardcodar em componentes.
  */
