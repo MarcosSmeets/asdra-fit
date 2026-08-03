@@ -1,4 +1,4 @@
-# Bíblia Visual — Ad Sidera (Build 5)
+# Bíblia Visual — Asdra Fit (Build 5)
 
 Fonte oficial de verdade visual. Qualquer decisão estética nova deve ser
 registrada aqui antes de virar código ou asset.

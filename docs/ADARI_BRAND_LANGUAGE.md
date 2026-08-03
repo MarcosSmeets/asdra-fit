@@ -1,7 +1,7 @@
 # Linguagem da Marca — Adaris
 
 ## O que são os Adaris
-Os companheiros do Ad Sidera se chamam **Adaris**.
+Os companheiros do Asdra Fit se chamam **Adaris**.
 
 - Singular: **Adari**
 - Plural: **Adaris**

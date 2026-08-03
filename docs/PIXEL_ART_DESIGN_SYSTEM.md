@@ -1,4 +1,4 @@
-# Design System Pixel 32-bit — Ad Sidera (Build 5)
+# Design System Pixel 32-bit — Asdra Fit (Build 5)
 
 Componentes em `apps/mobile/src/components/pixel/` (exportados também por
 `@/components`). Tokens em `src/theme/tokens.ts` — nenhum hex fora dele.

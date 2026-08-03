@@ -1,6 +1,6 @@
 # Balanceamento de Batalha
 
-Como o Ad Sidera dimensiona adversários e resolve dano. Fonte única de números em
+Como o Asdra Fit dimensiona adversários e resolve dano. Fonte única de números em
 `packages/shared/src/constants.ts`; fórmulas puras em `battlePower.ts`,
 `enemyScaling.ts` e `battle/damage.ts`. Ver também [BATTLE_SYSTEM.md](BATTLE_SYSTEM.md)
 (motor por turnos) e decisões [BAT-A](DECISIONS.md), [BAT-F](DECISIONS.md), [BAT-I](DECISIONS.md).

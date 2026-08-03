@@ -42,9 +42,33 @@ A exclusão usa `onDelete: Cascade` no Prisma para todas as relações do usuár
 
 Os logs estruturados (pino) aplicam **redaction**: removem `authorization`, `cookie`, `password`, `refreshToken`, `notes` (observações) e `operations` (payloads de sync). Segredos e conteúdo privado nunca aparecem em log.
 
+## Publicidade
+
+O app é gratuito e se mantém com **um único banner** ancorado acima da barra de abas
+([MRK-C](DECISIONS.md)). Não há intersticial, anúncio de abertura nem vídeo recompensado.
+
+- **Operador:** Google AdMob. É o único terceiro com quem há qualquer compartilhamento
+  de dado, e o dado em questão é **um só**: o identificador de publicidade do aparelho
+  (Android Advertising ID / IDFA), fornecido pelo próprio sistema operacional.
+- **O que NUNCA vai para a rede de anúncios:** fotos, atividades, metas, progresso,
+  humor, observações, localização em texto, dados da criatura ou qualquer dado de saúde.
+  O SDK de anúncios não tem acesso ao SQLite local nem à API.
+- **Base legal (LGPD):** legítimo interesse para publicidade não personalizada; consentimento
+  quando o usuário opta por anúncios personalizados.
+- **Controle do usuário:** o consentimento é coletado pelo formulário UMP do Google e pode
+  ser revisto a qualquer momento em *Perfil → Privacidade → Opções de anúncios*. No iOS há
+  ainda o prompt de rastreamento (ATT) do sistema. O identificador de publicidade pode ser
+  redefinido ou limitado nas configurações do próprio aparelho.
+- `delayAppMeasurementInit` está ligado: o SDK não coleta nada na abertura do app, apenas
+  quando um anúncio é efetivamente requisitado.
+
+Política de privacidade do parceiro: <https://policies.google.com/technologies/partner-sites>.
+
 ## Dados não vendidos, insights locais opcionais
 
-- Os dados do usuário **não são vendidos** nem compartilhados com terceiros.
+- Os dados do usuário **não são vendidos**. O único compartilhamento com terceiro é o
+  identificador de publicidade descrito na seção acima — nenhum dado de treino, saúde ou
+  conteúdo pessoal é compartilhado com quem quer que seja.
 - Insights são **desativados por padrão** ([DEC-14](DECISIONS.md)). Quando o usuário
   ativa, o app mantém apenas contagens locais de uso (dias ativos, atividades,
   batalhas e aberturas) no próprio SQLite; nada é enviado a servidor. Desativar

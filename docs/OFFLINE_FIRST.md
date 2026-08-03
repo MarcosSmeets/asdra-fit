@@ -1,6 +1,6 @@
 # Estratégia Local-First (Offline-First)
 
-O Ad Sidera é **local-first**: o dispositivo é a fonte primária de dados e todo o fluxo principal funciona **sem internet e sem conta**. A nuvem é opcional e serve para backup/multi-dispositivo e ligas.
+O Asdra Fit é **local-first**: o dispositivo é a fonte primária de dados e todo o fluxo principal funciona **sem internet e sem conta**. A nuvem é opcional e serve para backup/multi-dispositivo e ligas.
 
 ## Modo local vs. conta
 

@@ -1,12 +1,12 @@
-# Ad Sidera
+# Asdra Fit
 
 > Rumo às estrelas através da disciplina diária.
 
-**Ad Sidera** é um aplicativo mobile **gratuito** e **local-first** de hábitos, focado em academia, exercícios e esportes. Você escolhe uma criatura original, define uma meta semanal, registra treinos com fotos **privadas** e evolui junto com seu companheiro — sozinho, numa campanha offline, ou em ligas privadas com amigos.
+**Asdra Fit** — um produto da **Ad Sidera** — é um aplicativo mobile **gratuito** e **local-first** de hábitos, focado em academia, exercícios e esportes. Você escolhe uma criatura original, define uma meta semanal, registra treinos com fotos **privadas** e evolui junto com seu companheiro — sozinho, numa campanha offline, ou em ligas privadas com amigos.
 
 Após o onboarding, a experiência começa em **Meu Adari**: a home onde a criatura vive em seu habitat — carinho, alimentação, conversa e descanso — com acesso direto ao registro de atividade, ao passeio e à Jornada. (A antiga sala 2.5D explorável do Observatório foi substituída por esta home mais direta; restam dela o serviço de estado e a geometria do habitat.)
 
-Princípios: sem paywall, sem anúncios invasivos, sem pay-to-win, **privacidade por padrão**, funciona **offline**, incentiva **constância** (não excesso), e **nunca** pune, mata ou entristece a criatura por ausência.
+Princípios: sem paywall, sem pay-to-win, um único banner não intrusivo (nunca recompensado, nunca intersticial), **privacidade por padrão**, funciona **offline**, incentiva **constância** (não excesso), e **nunca** pune, mata ou entristece a criatura por ausência.
 
 ---
 

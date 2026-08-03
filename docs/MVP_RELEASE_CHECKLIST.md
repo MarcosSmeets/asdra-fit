@@ -50,6 +50,25 @@ pnpm --filter @ad-sidera/mobile export:ios
 - [ ] Testar migração sobre uma instalação existente, além da instalação limpa.
 - [ ] Confirmar zero P0/P1 e definir lista/canal de feedback dos testers.
 
+## Gate de anúncios (AdMob)
+
+Vale para qualquer build; os dois primeiros itens **bloqueiam** a publicação na Play Store.
+
+- [ ] Play Console → *Policy and programmes → App content* → **"Yes, my app contains ads"**.
+- [ ] Play Console → **Data safety**: declarar "Device or other IDs" como coletado,
+  finalidade *Advertising or marketing*, compartilhado com terceiro (Google).
+- [ ] `GADApplicationIdentifier` (iOS) e o meta-data `com.google.android.gms.ads.APPLICATION_ID`
+  presentes em `npx expo config --type introspect`. **Sem App ID válido o app crasha no launch.**
+- [ ] Unit IDs reais **apenas** no perfil `production` do `eas.json`. Em `preview` o banner tem
+  de mostrar o anúncio de teste do Google — clique de tester em anúncio real é *invalid traffic*
+  e pode suspender a conta.
+- [ ] Banner visível nas 5 abas e **ausente** em batalha, onboarding, `getting-started`,
+  passeio, evolução e telas de configuração.
+- [ ] Formulário de consentimento (UMP) aparece quando exigido, e *Privacidade → Opções de
+  anúncios* reabre o formulário.
+- [ ] `SKAdNetworkItems` revisado contra a lista atual do Google (só relevante quando houver
+  build iOS).
+
 ## Distribuição
 
 Para beta interno por link EAS, o gate humano acima basta. Play Closed Testing ou

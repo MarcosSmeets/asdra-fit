@@ -1,6 +1,6 @@
 # Decisões Arquiteturais (ADR)
 
-Registro das decisões que moldaram o Ad Sidera. Cada uma explica **o quê** e **por quê**.
+Registro das decisões que moldaram o Asdra Fit. Cada uma explica **o quê** e **por quê**.
 
 ## DEC-01 — Monorepo com PNPM Workspaces + Turborepo
 
@@ -148,3 +148,19 @@ Registro das decisões que moldaram o Ad Sidera. Cada uma explica **o quê** e *
 ## BAT-I — Segurança e versões
 **Decisão:** o servidor nunca confia em XP/Vigor/resultado/vitórias do cliente para o competitivo: re-deriva o teto de PvE (sinaliza excesso) e resolve duelos por simulação própria; PvE offline permitido e sincronizado sem duplicar; duelos exigem conexão. Versões independentes: `battleCalculationVersion/vigorCalculationVersion/abilityContentVersion/enemyBalanceVersion`; batalhas antigas não são recalculadas ao rebalancear.
 **Por quê:** integridade competitiva e anti-cheat sem quebrar o local-first, com versionamento que evita recomputar histórico.
+
+
+# Marca e monetização
+
+## MRK-A — "Asdra Fit" é o app; "Ad Sidera" é a empresa
+**Decisão:** o produto passou a se chamar **Asdra Fit**. Mudaram o nome visível (`expo.name`, `BRAND.appName`, `APP_NAME`) e os identificadores do app: `slug: asdra-fit`, `scheme: asdrafit`, `bundleIdentifier`/`package: app.asdrafit.mobile`. **Não** mudaram — e não devem mudar: o scope `@ad-sidera/*`, o `name` do `package.json` raiz, o banco Postgres `adsidera`, o host da API no Railway, os e-mails `@adsidera.dev`, os nomes de asset `ad-sidera-*.png`, o `display` dos `packages/typescript-config/*` e o `SUPPORT.PRIVACY_CONTACT` (sob a LGPD o **controlador é a Ad Sidera**, não o app).
+**Por quê:** o app é um produto da empresa, não a empresa. Os identificadores mudaram porque nada havia sido publicado em loja e `bundleIdentifier`/`package` são imutáveis após a primeira publicação — era a última janela gratuita.
+
+## MRK-B — Identificadores internos de armazenamento continuam `adsidera`
+**Decisão:** `secureStore.ts` (`adsidera.accessToken`/`refreshToken`/`accountUserId`), `databaseScope.ts` (`adsidera.db`, `adsidera-account-<id>.db`) e o filtro `name.startsWith('adsidera')` em `privacyService.ts` **não** acompanham o rename.
+**Por quê:** são invisíveis ao usuário e renomeá-los custaria sessão e progresso sem migração. Mais grave: o filtro do `privacyService` é o que o "Apagar dados locais" (LGPD) usa para varrer o diretório SQLite — se ele descasar do `databaseScope`, o wipe **silenciosamente** não encontra arquivo nenhum e o app mente para o usuário. Os três só podem mudar juntos, e não há motivo para mudar.
+
+## MRK-C — Banner AdMob único e não recompensado
+**Decisão:** o app passa a exibir **um** banner adaptativo (`react-native-google-mobile-ads`), ancorado entre o conteúdo e a barra de abas, presente apenas nas rotas de `(tabs)`. Proibidos: intersticial, anúncio de abertura e **vídeo recompensado**. Consentimento via UMP do Google + ATT no iOS. Unit IDs reais só no perfil EAS `production`; qualquer outro caminho (`__DEV__`, env ausente, env malformado) cai no ID de teste do Google.
+**Por quê:** o app é gratuito e precisa se pagar. Banner ancorado é o formato que não interrompe o uso — e o mais fácil de remover se a receita não justificar. A trava dos unit IDs existe porque anúncio real clicado em build `preview` (distribuição interna) é *invalid traffic* e pode suspender a conta AdMob.
+**Invariantes preservadas:** a regra de que **Vigor nunca vem de anúncio** (`BAT-B` acima, `packages/shared/src/vigor.ts`, `packages/shared/src/constants.ts`, `docs/VIGOR_AND_REST.md`) continua valendo integralmente. Nenhum recurso de jogo — Vigor, XP, evolução, item — pode ser obtido assistindo anúncio. É isso que separa "monetização honesta" de pay-to-win.
