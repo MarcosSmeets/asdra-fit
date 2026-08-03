@@ -39,7 +39,8 @@ import {
   type BattleActionPhase,
 } from '@/features/battle/actionSequence';
 import type { AdariVisualState } from '@/features/my-adari/state';
-import { battleVisualFeedbackSequence } from '@/features/battle/battleFeedback';
+import { battleVisualFeedbackSequence, type BattleVisualFeedback } from '@/features/battle/battleFeedback';
+import { BATTLE_TIMING, phaseDurations } from '@/features/battle/battleTiming';
 
 function DarkPanel({ children }: { children: React.ReactNode }): React.ReactElement {
   return <View style={styles.panel}>{children}</View>;
@@ -92,6 +93,8 @@ function BattleArena({
   const releaseWait = useRef<(() => void) | null>(null);
   const [visualPhase, setVisualPhase] = useState<BattleActionPhase>('idle');
   const [feedback, setFeedback] = useState<BattleStageFeedback | null>(null);
+  /** Histórico que cresce beat a beat, em vez de receber o round inteiro de uma vez. */
+  const [visibleLog, setVisibleLog] = useState<string[]>([]);
   const [completionReady, setCompletionReady] = useState(false);
   const [queuedPlayerVisual, setQueuedPlayerVisual] = useState<AdariVisualState | null>(null);
 
@@ -112,39 +115,61 @@ function BattleArena({
     skipRequested.current = false;
     setFeedback(null);
     const selectedAbility = player.abilities.find((ability) => ability.id === action.abilityId);
-    setQueuedPlayerVisual(selectedAbility?.type === 'defense' || selectedAbility?.type === 'shield'
-      ? 'defending' : 'attacking');
+    const guarding = selectedAbility?.type === 'defense' || selectedAbility?.type === 'shield';
+    setQueuedPlayerVisual(guarding ? 'defending' : 'attacking');
+
+    const playerPhases = phaseDurations('player', guarding ? 'guard' : 'attack');
     for (const phase of BATTLE_ACTION_SEQUENCE.slice(0, 3)) {
       setVisualPhase(phase);
-      await waitForAnimation(phase === 'preparing' ? 130 : 110);
+      await waitForAnimation(playerPhases[phase]);
     }
+
     const next = resolveRound(current, action, { player, enemy: enemy.combatant });
-    stateRef.current = next;
-    setState(next);
     const events = next.log.slice(current.log.length);
     const feedbackSequence = battleVisualFeedbackSequence(events, current.log.length);
     const playerBeat = feedbackSequence.find((item) => item.attacker === 'player');
+    const enemyBeat = feedbackSequence.find((item) => item.attacker === 'enemy');
+
+    // O log cresce beat a beat. Antes o painel de histórico recebia todas as
+    // linhas do round de uma vez, ~350ms depois do toque — o desfecho chegava na
+    // tela antes das animações que deveriam explicá-lo.
+    const narrate = (beat: BattleVisualFeedback): void => {
+      setFeedback(beat);
+      setVisibleLog((lines) => [...lines, beat.text]);
+    };
+
     if (playerBeat) {
-      setFeedback(playerBeat);
+      narrate(playerBeat);
       for (const phase of BATTLE_ACTION_SEQUENCE.slice(3)) {
         setVisualPhase(phase);
-        await waitForAnimation(phase === 'targetReaction' ? 180 : 120);
+        await waitForAnimation(playerPhases[phase]);
       }
+      if (enemyBeat) await waitForAnimation(BATTLE_TIMING.announcementHoldMs);
     }
-    const enemyBeat = feedbackSequence.find((item) => item.attacker === 'enemy');
-    if (enemyBeat && next.status === 'ongoing') {
-      setFeedback(enemyBeat);
+
+    // Sem `status === 'ongoing'`: quando o golpe do inimigo matava o jogador, o
+    // beat era pulado inteiro e ele nunca via o que o derrotou.
+    if (enemyBeat) {
+      narrate(enemyBeat);
+      const enemyPhases = phaseDurations('enemy');
       for (const phase of BATTLE_ACTION_SEQUENCE) {
         setVisualPhase(phase);
-        await waitForAnimation(phase === 'targetReaction' ? 180 : 110);
+        await waitForAnimation(enemyPhases[phase]);
       }
     }
+
+    // Só agora o estado é publicado: enquanto ele mudava antes dos beats, a pose
+    // de vitória aparecia no meio do turno do inimigo.
+    stateRef.current = next;
+    setState(next);
     const ending = phaseAfterAction(next.status);
     setVisualPhase(ending);
     setQueuedPlayerVisual(null);
     actionLock.current = false;
     if (ending === 'victory' || ending === 'defeat') {
-      await waitForAnimation(600);
+      await waitForAnimation(enemyBeat && ending === 'defeat'
+        ? BATTLE_TIMING.fatalOutcomeHoldMs
+        : BATTLE_TIMING.outcomeHoldMs);
       setCompletionReady(true);
     }
   }, [player, enemy, waitForAnimation]);
@@ -186,7 +211,9 @@ function BattleArena({
       : state.player.guarding ? 'defending'
         : queuedPlayerVisual && feedback?.attacker !== 'enemy' ? queuedPlayerVisual
           : feedback?.attacker === 'enemy' && visualPhase === 'targetReaction' ? 'takingDamage' : 'battleReady';
-  const recent = state.log.slice(-8);
+  // Mais recente no topo e com destaque: antes a linha nova entrava no fim de um
+  // bloco de 8 linhas apagadas, então ninguém lia o que tinha acabado de acontecer.
+  const recent = visibleLog.slice(-8).reverse();
   const telegraphEstimate = enemy.combatant.boss
     ? estimateDamageRange({
         attackerAttack: enemy.combatant.stats.attack,
@@ -275,13 +302,13 @@ function BattleArena({
             Escolha uma ação para começar.
           </Text>
         ) : (
-          recent.map((event, index) => (
+          recent.map((line, index) => (
             <Text
-              key={`${event.round}-${event.side}-${index}`}
+              key={`${recent.length - index}-${line}`}
               variant="caption"
-              style={{ color: pixelColors.textMuted }}
+              style={{ color: index === 0 ? pixelColors.text : pixelColors.textMuted }}
             >
-              {event.text}
+              {index === 0 ? `▸ ${line}` : line}
             </Text>
           ))
         )}

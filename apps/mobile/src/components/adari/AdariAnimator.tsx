@@ -106,11 +106,15 @@ export function AdariAnimator({
         ]),
       ]);
     } else if (['refusingFood', 'takingDamage', 'defeat'].includes(state)) {
+      // Deriva do catálogo em vez de 70/70/70/90 fixos: com os números soltos, o
+      // MOTION_OVERRIDES.takingDamage era ignorado e a reação ao golpe terminava
+      // antes de a fase correspondente começar a ser percebida.
+      const halfAction = Math.round(motion.actionMs / 2);
       animation = Animated.sequence([
-        Animated.timing(translateX, { toValue: -10, duration: 70, useNativeDriver: true }),
-        Animated.timing(translateX, { toValue: 10, duration: 70, useNativeDriver: true }),
-        Animated.timing(translateX, { toValue: -7, duration: 70, useNativeDriver: true }),
-        Animated.timing(translateX, { toValue: 0, duration: 90, useNativeDriver: true }),
+        Animated.timing(translateX, { toValue: -10, duration: motion.anticipationMs, useNativeDriver: true }),
+        Animated.timing(translateX, { toValue: 10, duration: halfAction, useNativeDriver: true }),
+        Animated.timing(translateX, { toValue: -7, duration: halfAction, useNativeDriver: true }),
+        Animated.timing(translateX, { toValue: 0, duration: motion.returnMs, useNativeDriver: true }),
       ]);
     } else if (['curious', 'talkingReaction', 'askingForWalk'].includes(state)) {
       animation = Animated.sequence([

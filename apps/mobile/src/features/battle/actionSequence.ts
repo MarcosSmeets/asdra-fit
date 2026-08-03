@@ -11,7 +11,10 @@ export type BattleActionPhase =
   | 'victory'
   | 'defeat';
 
-export const BATTLE_ACTION_SEQUENCE: readonly BattleActionPhase[] = [
+/** As fases que a encenação de um turno percorre — nunca inclui repouso ou desfecho. */
+export type BattleAnimationPhase = Exclude<BattleActionPhase, 'idle' | 'victory' | 'defeat'>;
+
+export const BATTLE_ACTION_SEQUENCE: readonly BattleAnimationPhase[] = [
   'preparing', 'advancing', 'attacking', 'impact', 'targetReaction', 'returning',
 ];
 

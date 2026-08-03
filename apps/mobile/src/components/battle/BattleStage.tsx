@@ -3,25 +3,21 @@ import { Animated, StyleSheet, View } from 'react-native';
 import { useReducedMotion } from '../../theme/ThemeProvider';
 import { pixelColors, pixelPalette, radius } from '../../theme/tokens';
 import { resolveAdariManifest, resolveStageSize } from '../../content/adari';
-import type { BattleActionPhase } from '../../features/battle/actionSequence';
+import { BATTLE_PHASE_LABEL, type BattleActionPhase } from '../../features/battle/actionSequence';
+import { battleAnnouncement, type BattleVisualFeedback } from '../../features/battle/battleFeedback';
 import type { AdariVisualState } from '../../features/my-adari/state';
 import { AdariAnimator } from '../adari/AdariAnimator';
 import type { AdariMood } from '../adari/AdariPortrait';
 import { Text } from '../Text';
 import { EnemyActionSprite } from './EnemyActionSprite';
 
-/** Descrição do último round para o feedback visual (lunge/shake/flash/dano). */
-export interface BattleStageFeedback {
-  /** Muda a cada round resolvido (normalmente o tamanho do log). */
-  seq: number;
-  /** Quem executou a última ação registrada. */
-  attacker: 'player' | 'enemy';
-  /** Dano do último evento do log (0 quando não houve dano). */
-  damage: number;
-  /** Dano antes da Guarda e parcela efetivamente bloqueada. */
-  rawDamage: number;
-  blockedDamage: number;
-}
+/**
+ * Descrição do último beat para o feedback visual (lunge/shake/flash/dano).
+ * Reusa o tipo produzido por `battleVisualFeedbackSequence`: eram duas interfaces
+ * idênticas declaradas em arquivos diferentes, e foi por aí que `abilityName`
+ * ficou de fora da arena.
+ */
+export type BattleStageFeedback = BattleVisualFeedback;
 
 export interface BattleStageProps {
   creatureKey: string;
@@ -303,11 +299,24 @@ export function BattleStage({
         ) : null}
       </View>
 
-      <View style={styles.divider}>
-        <View style={styles.dividerLine} />
-        <View style={{ width: 8, height: 8, backgroundColor: pixelColors.brandGold }} />
-        <View style={styles.dividerLine} />
-      </View>
+      {/*
+        Anúncio do beat. Não é temporizado de propósito: o conteúdo é estado e
+        permanece até a próxima ação, então a informação sobrevive com "reduzir
+        movimento" ligado, onde as esperas retornam imediatamente.
+      */}
+      {feedback ? (
+        <View style={[styles.announcement, { borderColor: accent }]} accessibilityLiveRegion="polite">
+          <Text variant="hud" numberOfLines={2} color="text">
+            {battleAnnouncement(feedback, feedback.attacker === 'player' ? playerName : enemyName)}
+          </Text>
+        </View>
+      ) : (
+        <View style={styles.divider}>
+          <View style={styles.dividerLine} />
+          <View style={{ width: 8, height: 8, backgroundColor: pixelColors.brandGold }} />
+          <View style={styles.dividerLine} />
+        </View>
+      )}
 
       {/* Adari (base) — sprite do estágio atual */}
       <View style={[styles.zone, styles.playerZone]}>
@@ -317,7 +326,7 @@ export function BattleStage({
             size={playerSize}
             state={playerVisualState}
             stage={stageInt}
-            accessibilityLabel={`${playerName}, ${actionPhase}`}
+            accessibilityLabel={`${playerName}, ${BATTLE_PHASE_LABEL[actionPhase]}`}
           />
           {playerGuarding ? (
             <Animated.View style={[styles.guardAura, { opacity: guardPulse }]} pointerEvents="none">
@@ -385,4 +394,12 @@ const styles = StyleSheet.create({
   },
   divider: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   dividerLine: { flex: 1, height: 2, backgroundColor: pixelColors.border },
+  // Fundo sólido: a arena tem StarField atrás, e texto sobre estrelas não lê.
+  announcement: {
+    borderWidth: 2,
+    backgroundColor: pixelColors.surface,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    alignItems: 'center',
+  },
 });

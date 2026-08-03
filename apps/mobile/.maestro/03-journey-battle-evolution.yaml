@@ -9,9 +9,17 @@ appId: app.asdrafit.mobile
 - tapOn: 'Preparar batalha'
 - assertVisible: 'Iniciar batalha'
 - tapOn: 'Iniciar batalha'
+# Espera o comando destravar em vez de adivinhar a duração do turno: 'Escolha sua
+# ação' é o rótulo da fase `idle`, ou seja, o sinal preciso de "pronto para input".
+# Sem isto, um turno mais longo faz o tap cair em botão desabilitado — com
+# `optional: true` não falha, só não registra, e a batalha nunca termina.
 - repeat:
-    times: 12
+    times: 16
     commands:
+      - extendedWaitUntil:
+          visible: 'Escolha sua ação'
+          timeout: 12000
+          optional: true
       - tapOn:
           text: 'Atacar'
           optional: true
