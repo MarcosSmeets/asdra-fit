@@ -1,6 +1,8 @@
 import { tokenStore } from '../platform/secureStore';
 
-const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000/api/v1';
+/** Sem override, o app fala com a API hospedada — inclusive em dev/Expo Go. */
+const BASE_URL =
+  process.env.EXPO_PUBLIC_API_URL ?? 'https://ad-sideraapi-production.up.railway.app/api/v1';
 
 export class ApiError extends Error {
   constructor(
