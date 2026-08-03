@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View } from 'react-native';
-import { ADS_ENABLED } from '@/config/ads';
+import { ADS_ENABLED, BANNER_SIZE } from '@/config/ads';
 import { useTheme } from '../../theme/ThemeProvider';
 import { AdSlotPlaceholder } from './AdSlotPlaceholder';
 import { BANNER_UNIT_ID } from './adUnit';
@@ -45,7 +45,7 @@ export function AdBanner({ placement, testID }: AdBannerProps): React.ReactEleme
     >
       <BannerAd
         unitId={BANNER_UNIT_ID}
-        size={BannerAdSize.LARGE_ANCHORED_ADAPTIVE_BANNER}
+        size={BannerAdSize[BANNER_SIZE]}
         onAdLoaded={() => setLoaded(true)}
         onAdFailedToLoad={() => setLoaded(false)}
       />

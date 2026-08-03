@@ -1,6 +1,7 @@
 import Constants, { ExecutionEnvironment } from 'expo-constants';
 import type { ComponentType } from 'react';
 import type { AdsConsentInterface, BannerAdProps } from 'react-native-google-mobile-ads';
+import type { BannerSizeChoice } from '@/config/ads';
 
 /**
  * Superfície mínima da SDK que este app usa. Tipar à mão (em vez de reexportar o
@@ -9,9 +10,10 @@ import type { AdsConsentInterface, BannerAdProps } from 'react-native-google-mob
  */
 export interface GoogleMobileAdsModule {
   BannerAd: ComponentType<BannerAdProps>;
-  // Só o tamanho que o app usa. `Record<string, string>` daria `string | undefined`
-  // sob `noUncheckedIndexedAccess`, e o `size` do BannerAd não aceita undefined.
-  BannerAdSize: Readonly<Record<'LARGE_ANCHORED_ADAPTIVE_BANNER', string>>;
+  // Só os tamanhos que o app pode usar. `Record<string, string>` daria
+  // `string | undefined` sob `noUncheckedIndexedAccess`, e o `size` do BannerAd
+  // não aceita undefined.
+  BannerAdSize: Readonly<Record<BannerSizeChoice, string>>;
   AdsConsent: AdsConsentInterface;
   default: () => {
     initialize: () => Promise<unknown>;

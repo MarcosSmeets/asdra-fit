@@ -8,6 +8,47 @@
 export type AdPlatform = 'ios' | 'android';
 
 /**
+ * Tamanho do banner. Trocar aqui muda o app inteiro — é o único ponto de
+ * decisão sobre quanta tela o anúncio ocupa.
+ *
+ * `LARGE_ANCHORED_ADAPTIVE_BANNER` é o sucessor oficial (o `ANCHORED_ADAPTIVE_BANNER`
+ * está `@deprecated` no SDK), mas é bem mais alto. `BANNER` é o 320x50 fixo de
+ * sempre: menor receita por impressão, footprint mínimo.
+ */
+export type BannerSizeChoice = 'LARGE_ANCHORED_ADAPTIVE_BANNER' | 'BANNER';
+
+/**
+ * `BANNER` (320×50) por decisão de produto: o anúncio tem de ser discreto e não
+ * atrapalhar o uso. O `LARGE_ANCHORED_ADAPTIVE_BANNER` chega a 150 dp — quase
+ * 20% da tela, permanente — e comia a cena do Adari na home.
+ *
+ * 50 dp é o CHÃO do AdMob: não existe formato de banner mais baixo. Se um dia
+ * quiser mais receita por impressão, é aqui que se troca — e a home é o que
+ * precisa ser reavaliado.
+ */
+export const BANNER_SIZE: BannerSizeChoice = 'BANNER';
+
+/**
+ * Altura MÁXIMA em dp de cada tamanho, segundo a documentação do Google. O valor
+ * exato é calculado pelo SDK nativo por aparelho e não é replicável aqui, então
+ * isto é um teto para dimensionar o placeholder — o banner real pode vir menor.
+ *
+ * Large anchored adaptive: "entre 50 e 150 dp, nunca mais que 20% da altura em
+ * retrato". BANNER: 320x50 fixo.
+ * https://developers.google.com/admob/android/banner/anchored-adaptive
+ */
+export const BANNER_MAX_HEIGHT_DP: Record<BannerSizeChoice, number> = {
+  LARGE_ANCHORED_ADAPTIVE_BANNER: 150,
+  BANNER: 50,
+};
+
+/** Teto real considerando o limite de 20% da altura do aparelho. */
+export function bannerMaxHeight(size: BannerSizeChoice, screenHeight: number): number {
+  const cap = size === 'LARGE_ANCHORED_ADAPTIVE_BANNER' ? screenHeight * 0.2 : Infinity;
+  return Math.round(Math.min(BANNER_MAX_HEIGHT_DP[size], cap));
+}
+
+/**
  * IDs de teste públicos do Google (banner adaptativo). Clique em anúncio de teste
  * não gera tráfego inválido — é o único ID seguro fora de produção.
  */
