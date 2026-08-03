@@ -38,7 +38,12 @@ async function bootstrap(): Promise<void> {
   SwaggerModule.setup('docs', app, document);
 
   const port = config.get('PORT', { infer: true });
-  await app.listen(port);
+  // O roteamento interno do Railway usa IPv6. '::' escuta em IPv6 e, por dual-stack,
+  // também em IPv4 — ao contrário de '0.0.0.0', que deixaria o proxy sem rota.
+  await app.listen(port, '::');
+  // Endereço real de escuta no log: sem isso, um 502 do proxy é indistinguível de
+  // um bind na porta errada.
+  console.log(`[boot] API escutando em ${await app.getUrl()}`);
 }
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
