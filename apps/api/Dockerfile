@@ -1,5 +1,8 @@
 # Build de produção da API em monorepo pnpm.
 FROM node:20-alpine AS base
+# openssl é obrigatório para o query engine do Prisma no Alpine: sem ele o Prisma
+# não detecta a versão, assume openssl-1.1.x e o engine falha ao carregar libssl.so.1.1.
+RUN apk add --no-cache openssl libc6-compat
 RUN corepack enable
 WORKDIR /app
 
