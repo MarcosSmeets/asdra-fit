@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Image, View } from 'react-native';
+import { View } from 'react-native';
 import type { AdariVisualState } from '../../features/my-adari/state';
 import { resolveAdariManifest, resolveVisualState } from '../../content/adari';
 import { AtlasFrame } from '../sprites/AtlasFrame';
+import { ImageWithFallback } from '../sprites/ImageWithFallback';
 import { adariSpriteSequence, safeAdariAtlasColumn } from './adariActionSpriteFrames';
 
 export { adariSpriteSequence } from './adariActionSpriteFrames';
@@ -43,13 +44,15 @@ export function AdariActionSprite({ creatureKey, state, size, stage,
   // Fallback é a silhueta do próprio estágio: o lineup legado tinha fundo chroma.
   // Sem placa nem aura atrás do sprite: iluminação é camada da CENA
   // (EnvironmentalGlow). Aqui só sai o recorte transparente do atlas.
+  // A silhueta é PNG pelo mesmo transporte do atlas, então precisa do próprio
+  // fallback — senão os dois degraus caem juntos e não sobra imagem nenhuma.
   return (
     <View style={{ width: size, height: size }}>
       <AtlasFrame source={manifest.atlas.source} columns={manifest.atlas.columns} rows={manifest.atlas.rows}
         column={column} row={manifest.atlas.row} size={size} atlasAspectRatio={manifest.atlas.aspectRatio}
-        accessibilityLabel={accessibilityLabel}
-        onErrorFallback={<Image source={manifest.silhouette} style={{ width: size, height: size }}
-          resizeMode="contain" accessibilityLabel={accessibilityLabel ?? 'Adari'} />} />
+        accessibilityLabel={accessibilityLabel} tag={`adari:${creatureKey}:${stageInt}`}
+        onErrorFallback={<ImageWithFallback source={manifest.silhouette} size={size}
+          accessibilityLabel={accessibilityLabel ?? 'Adari'} tag={`adari-silhueta:${creatureKey}`} />} />
     </View>
   );
 }

@@ -10,7 +10,7 @@ Os testes concentram-se onde o risco é maior: as **regras de domínio** em `pac
 | **api (unit)** | Jest + ts-jest (`*.spec.ts`) | node | Services isolados. |
 | **api (e2e)** | Jest + **Supertest** (`*.e2e-spec.ts`) | node + **Postgres** | Auth, atividades, ligas, sync, autorização por dono, idempotência. |
 | **mobile (lógica)** | Jest + ts-jest | node | Domínio local (registrar atividade, progresso, campanha), fila de sync, reconcile. |
-| **mobile (componentes)** | **jest-expo** | jsdom | Telas/componentes (RNTL). |
+| **mobile (componentes)** | **jest-expo** + RNTL (`*.test.tsx`) | jsdom | Resiliência de sprite (`AtlasFrame`, `AdariActionSprite`). Escopo deliberadamente estreito — ver abaixo. |
 | **E2E** | **Maestro** (YAML) | device/emulador | Fluxos ponta a ponta. |
 
 ## Como rodar
@@ -22,7 +22,11 @@ pnpm test
 # Por pacote
 pnpm --filter @ad-sidera/shared test
 pnpm --filter @ad-sidera/api test           # unit (*.spec.ts)
-pnpm --filter @ad-sidera/mobile test         # lógica local (*.test.ts)
+pnpm --filter @ad-sidera/mobile test         # os dois projects: logic + components
+
+# Só uma das camadas
+pnpm --filter @ad-sidera/mobile test -- --selectProjects logic
+pnpm --filter @ad-sidera/mobile test -- --selectProjects components
 ```
 
 ### Integração da API (Supertest + Postgres)
@@ -58,7 +62,11 @@ Alguns passos usam `optional: true` por conta da variância de batalha.
 - `packages/shared/jest.config.cjs` — preset `ts-jest`, node, `**/*.test.ts`, mapeia `@ad-sidera/config`.
 - `apps/api/jest.config.cjs` — unit, `.*\.spec\.ts$`, node.
 - `apps/api/test/jest-e2e.json` — integração Supertest, `.e2e-spec.ts$`.
-- `apps/mobile/jest.config.js` — lógica em node com ts-jest (`isolatedModules`); componentes usam jest-expo (documentado no próprio arquivo).
+- `apps/mobile/jest.config.js` — dois `projects`: `logic` (node + ts-jest, `**/*.test.ts`) e `components` (jest-expo + RNTL, `**/*.test.tsx`). São projects separados porque `ts-jest`/node não renderiza React Native; manter o `testMatch` do `logic` inalterado evita arrastar os testes de lógica para o runtime do RN.
+
+### Escopo da camada de componentes
+
+Ela nasceu junto da correção do sumiço de imagens (`AtlasFrame`), porque resiliência de sprite é comportamento de componente e não dá para verificar sem renderizar. O escopo é **intencionalmente estreito**: cobre a cadeia de fallback de imagem, não a árvore de telas. Telas com muitas dependências de serviço continuam cobertas por Maestro — mockar 7 módulos para uma asserção sai mais caro do que o defeito que pegaria.
 
 ## Determinismo
 

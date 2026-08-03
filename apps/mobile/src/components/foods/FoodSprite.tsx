@@ -11,5 +11,5 @@ const COLUMN_BY_FOOD: Record<string, number> = {
 export function FoodSprite({ foodKey, name, size = 58 }: { foodKey: string; name: string; size?: number }): React.ReactElement {
   return <View style={{ width: size, height: size }}><AtlasFrame source={FOOD_ATLAS} columns={5} rows={1}
     column={COLUMN_BY_FOOD[foodKey] ?? 0} row={0} size={size} atlasAspectRatio={3}
-    accessibilityLabel={name} /></View>;
+    accessibilityLabel={name} tag={`comida:${foodKey}`} /></View>;
 }

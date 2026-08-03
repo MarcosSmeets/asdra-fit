@@ -71,16 +71,23 @@ export const useGameStore = create<GameState>((set) => ({
     }
   },
 
+  // A criatura só pode ser anulada por reset/logout explícito. Registrar atividade
+  // ou evoluir jamais pode apagá-la: `creature: null` manda a home para
+  // `<Redirect href="/onboarding" />` e parece que o app perdeu o progresso.
   register: async (input) => {
     const result = await registerActivity(input);
-    const [currentWeek, streak] = await Promise.all([getCurrentWeek(), getStreak()]);
-    set({ creature: result.activity ? await getCreature() : null, currentWeek, streak });
+    const [creature, currentWeek, streak] = await Promise.all([
+      getCreature(),
+      getCurrentWeek(),
+      getStreak(),
+    ]);
+    set((state) => ({ creature: creature ?? state.creature, currentWeek, streak }));
     return result;
   },
 
   evolve: async () => {
     const result = await evolveCreature();
-    set({ creature: result?.creature ?? null });
+    set((state) => ({ creature: result?.creature ?? state.creature }));
   },
 
   chooseCreature: async (key, nickname) => {

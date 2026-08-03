@@ -92,9 +92,28 @@ const LINE_SHADOW: Record<string, AdariStageRenderConfig['shadow']> = {
   solivar: { widthRatio: 0.62, heightRatio: 0.12, offsetY: 2 },
 };
 
+interface GeneratedEntry {
+  atlas?: number;
+  portrait: number;
+  silhouette: number;
+}
+
+/**
+ * Lookup tolerante. O acesso direto com `as keyof typeof GENERATED` mentia para o
+ * compilador: bastava uma chave em ADARI_LINE_KEYS/ADARI_STAGE_SLUGS sem `require`
+ * correspondente para `'atlas' in undefined` lançar TypeError DURANTE a avaliação
+ * do módulo — e como content/adari é importado pela home, pelo renderer e pelos
+ * sprites, isso derrubava o app inteiro em vez de degradar um sprite.
+ */
+const GENERATED_MAP = GENERATED as unknown as Record<string, GeneratedEntry | undefined>;
+
+function generatedFor(line: string, slug: string): GeneratedEntry | undefined {
+  return GENERATED_MAP[`${line}/${slug}`];
+}
+
 function atlasFor(line: string, slug: string): AdariAtlasConfig {
-  const generated = GENERATED[`${line}/${slug}` as keyof typeof GENERATED];
-  if (slug !== 'base' && 'atlas' in generated) {
+  const generated = generatedFor(line, slug);
+  if (slug !== 'base' && generated?.atlas !== undefined) {
     return {
       source: generated.atlas,
       columns: 8,
@@ -117,21 +136,27 @@ function atlasFor(line: string, slug: string): AdariAtlasConfig {
 }
 
 function buildManifest(line: string, stageInt: number): AdariAssetManifest {
-  const slug = ADARI_STAGE_SLUGS[stageInt]!;
-  const generated = GENERATED[`${line}/${slug}` as keyof typeof GENERATED];
-  const stage = STAGE_RENDER[stageInt]!;
+  const slug = ADARI_STAGE_SLUGS[stageInt] ?? 'base';
+  const generated = generatedFor(line, slug);
+  if (!generated && __DEV__) {
+    console.warn(`[adari] sem assets gerados para ${line}/${slug}; usando fallback`);
+  }
+  // Degrada em cascata: estágio pedido → base da mesma linha → solivar/base →
+  // o atlas v2, que é um require garantido. Nunca undefined, nunca lança.
+  const art = generated ?? generatedFor(line, 'base') ?? generatedFor('solivar', 'base');
+  const stage = STAGE_RENDER[stageInt] ?? STAGE_RENDER[0]!;
   return {
     key: `${line}/${slug}`,
     adariKey: line,
     stageInt,
     atlas: atlasFor(line, slug),
-    portrait: generated.portrait,
-    silhouette: generated.silhouette,
+    portrait: art?.portrait ?? ATLAS_V2,
+    silhouette: art?.silhouette ?? ATLAS_V2,
     renderConfig: {
       scaleHome: stage.scaleHome,
       scaleBattle: stage.scaleBattle,
       anchor: { ...stage.anchor },
-      shadow: { ...LINE_SHADOW[line]! },
+      shadow: { ...(LINE_SHADOW[line] ?? LINE_SHADOW.solivar!) },
       offset: { x: 0, y: 0 },
       hitboxInsetRatio: 0.08,
     },

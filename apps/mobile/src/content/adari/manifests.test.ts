@@ -83,6 +83,23 @@ describe('manifests de assets dos Adaris (§44)', () => {
     }
   });
 
+  // O acesso ao mapa GENERATED usava `as keyof typeof`, então uma chave sem
+  // `require` correspondente fazia o módulo LANÇAR durante o import — derrubando
+  // tudo que depende de content/adari, e não só o sprite afetado. Este teste passa
+  // a falhar na suíte em vez de o app morrer no boot.
+  it('toda combinação de linha e estágio produz um manifest completo', () => {
+    for (const line of ADARI_LINE_KEYS) {
+      for (const slug of ADARI_STAGE_SLUGS) {
+        const manifest = ADARI_ASSET_MANIFESTS[`${line}/${slug}`];
+        expect(manifest).toBeDefined();
+        expect(manifest!.atlas.source).toBeDefined();
+        expect(manifest!.portrait).toBeDefined();
+        expect(manifest!.silhouette).toBeDefined();
+        expect(manifest!.renderConfig.shadow).toBeDefined();
+      }
+    }
+  });
+
   it('os tiles da Jornada existem por região', () => {
     for (const region of ['r1', 'r2', 'r3']) {
       for (const tile of ['tile-ground-v1', 'tile-path-v1', 'portal-v1']) {

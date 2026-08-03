@@ -90,6 +90,7 @@ export function MyAdariScreen(): React.ReactElement {
   const params = useLocalSearchParams<{ reaction?: string }>();
   const online = useOnline();
   const mode = useSessionStore((state) => state.mode);
+  const onboardingComplete = useSessionStore((state) => state.onboardingComplete);
   const currentWeek = useGameStore((state) => state.currentWeek);
   const { width, height } = useWindowDimensions();
   const [snapshot, setSnapshot] = useState<ObservatorySnapshot | null>(null);
@@ -149,22 +150,34 @@ export function MyAdariScreen(): React.ReactElement {
       }));
       if (mode === 'account') setPending(await pendingSyncCount());
       setEvolutionAvailable((await evolutionOverview())?.available ?? false);
-      // Depois de treinar, o Adari comenta o que ficou mais forte.
-      if (params.reaction === 'activity') {
-        const progress = await attributeProgressFor(loaded.creature);
-        const strongest = [...progress].sort((a, b) => b.trainingProgress - a.trainingProgress)[0];
-        setTrainedHighlight(strongest?.attribute ?? null);
-        if (strongest) {
-          setMessage(`Nosso treino fortaleceu minha ${(ATTRIBUTE_LABELS[strongest.attribute] ?? strongest.attribute).toLowerCase()}.`);
-        }
-      } else {
-        setTrainedHighlight(null);
-      }
       dispatch('ASSETS_READY');
       if (reactionState === 'excitedAfterActivity') scheduleReady(1800);
     } catch (cause) {
+      if (__DEV__) console.warn('[my-adari] refresh falhou', cause);
       setError(cause instanceof Error ? cause.message : 'Não foi possível abrir Meu Adari.');
       dispatch('FAIL');
+      return;
+    }
+
+    // Enfeite pós-treino, depois do ASSETS_READY e com catch próprio: é o único
+    // trecho que roda exclusivamente na volta de registrar atividade, e antes ele
+    // podia derrubar a home inteira em ErrorState — sem nenhuma imagem na tela.
+    if (params.reaction !== 'activity') {
+      setTrainedHighlight(null);
+      return;
+    }
+    try {
+      const creature = useGameStore.getState().creature;
+      if (!creature) return;
+      const progress = await attributeProgressFor(creature);
+      const strongest = [...progress].sort((a, b) => b.trainingProgress - a.trainingProgress)[0];
+      setTrainedHighlight(strongest?.attribute ?? null);
+      if (strongest) {
+        setMessage(`Nosso treino fortaleceu minha ${(ATTRIBUTE_LABELS[strongest.attribute] ?? strongest.attribute).toLowerCase()}.`);
+      }
+    } catch (cause) {
+      if (__DEV__) console.warn('[my-adari] destaque de treino falhou', cause);
+      setTrainedHighlight(null);
     }
   }, [mode, params.reaction, scheduleReady]);
 
@@ -295,7 +308,19 @@ export function MyAdariScreen(): React.ReactElement {
   if (screenState === 'recoverableError' || error) {
     return <Screen><ErrorState message={error ?? 'Não foi possível abrir Meu Adari.'} onRetry={() => void refresh(true)} /></Screen>;
   }
-  if (!snapshot || !creature) return <Redirect href="/onboarding" />;
+  // Só mandar de volta ao onboarding quando ele estiver genuinamente incompleto.
+  // Uma leitura que falhou não pode dar a entender que o progresso sumiu — nesse
+  // caso o certo é oferecer nova tentativa.
+  if (!snapshot || !creature) {
+    if (onboardingComplete) {
+      return (
+        <Screen>
+          <ErrorState message="Não foi possível carregar seu Adari agora." onRetry={() => void refresh(true)} />
+        </Screen>
+      );
+    }
+    return <Redirect href="/onboarding" />;
+  }
 
   const xpProgress = levelFromTotalXp(creature.xp);
   const bondTier = bondTierFor(creature.bond);

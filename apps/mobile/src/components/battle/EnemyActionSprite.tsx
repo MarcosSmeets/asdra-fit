@@ -25,5 +25,6 @@ export function EnemyActionSprite({ regionKey, isBoss, size, phase, isAttacking,
   }, [isAttacking, isTakingDamage, reduceMotion, sequence]);
   return <AtlasFrame source={ENEMY_ACTION_ATLAS} columns={4} rows={6}
     column={sequence[frame] ?? 0} row={enemyAtlasRow(regionKey, isBoss)} size={size}
-    atlasAspectRatio={1} accessibilityLabel={accessibilityLabel} onErrorFallback={fallback} />;
+    atlasAspectRatio={1} accessibilityLabel={accessibilityLabel} onErrorFallback={fallback}
+    tag={`inimigo:${regionKey}${isBoss ? ':chefe' : ''}`} />;
 }
