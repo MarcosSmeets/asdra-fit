@@ -64,8 +64,8 @@
       [
         "react-native-google-mobile-ads",
         {
-          "androidAppId": "ca-app-pub-3940256099942544~3347511713",
-          "iosAppId": "ca-app-pub-3940256099942544~1458002511",
+          "androidAppId": "ca-app-pub-5361502950621819~3717239919",
+          "iosAppId": "ca-app-pub-5361502950621819~4075618555",
           "delayAppMeasurementInit": true,
           "userTrackingUsageDescription": "O Asdra Fit usa este identificador apenas para exibir anúncios que mantêm o app gratuito. Recusar não remove nenhuma funcionalidade.",
           "skAdNetworkItems": [

@@ -35,6 +35,8 @@
       "env": {
         "EXPO_PUBLIC_ENVIRONMENT": "production",
         "EXPO_PUBLIC_ENABLE_ONLINE_FEATURES": "true",
+        "EXPO_PUBLIC_ADMOB_BANNER_ANDROID": "ca-app-pub-5361502950621819/1342358017",
+        "EXPO_PUBLIC_ADMOB_BANNER_IOS": "ca-app-pub-5361502950621819/8433665966",
         "EXPO_PUBLIC_API_URL": "https://ad-sideraapi-production.up.railway.app/api/v1"
       },
       "android": {
