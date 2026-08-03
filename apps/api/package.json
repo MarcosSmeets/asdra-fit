@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "prebuild": "pnpm --filter @ad-sidera/config build && pnpm --filter @ad-sidera/shared build && prisma generate",
     "build": "nest build",
     "start": "node dist/main.js",
     "start:dev": "nest start --watch",

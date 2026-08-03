@@ -17,10 +17,8 @@ RUN pnpm install --frozen-lockfile
 COPY packages ./packages
 COPY apps/api ./apps/api
 
-RUN pnpm --filter @ad-sidera/config build \
-  && pnpm --filter @ad-sidera/shared build \
-  && pnpm --filter @ad-sidera/api exec prisma generate \
-  && pnpm --filter @ad-sidera/api build
+# O prebuild da API já compila @ad-sidera/config, @ad-sidera/shared e roda prisma generate.
+RUN pnpm --filter @ad-sidera/api build
 
 # ---- runtime ----
 FROM base AS runner
