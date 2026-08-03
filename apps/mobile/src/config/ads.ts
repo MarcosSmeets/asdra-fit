@@ -18,13 +18,14 @@ export type AdPlatform = 'ios' | 'android';
 export type BannerSizeChoice = 'LARGE_ANCHORED_ADAPTIVE_BANNER' | 'BANNER';
 
 /**
- * `BANNER` (320×50) por decisão de produto: o anúncio tem de ser discreto e não
- * atrapalhar o uso. O `LARGE_ANCHORED_ADAPTIVE_BANNER` chega a 150 dp — quase
- * 20% da tela, permanente — e comia a cena do Adari na home.
+ * `BANNER` (320×50) por decisão de produto, validada no aparelho pelo dono em
+ * 2026-08-03: o anúncio tem de ser discreto e não atrapalhar ninguém. O
+ * `LARGE_ANCHORED_ADAPTIVE_BANNER` chega a 150 dp — quase 20% da tela, de forma
+ * permanente — e comia a cena do Adari na home.
  *
- * 50 dp é o CHÃO do AdMob: não existe formato de banner mais baixo. Se um dia
- * quiser mais receita por impressão, é aqui que se troca — e a home é o que
- * precisa ser reavaliado.
+ * 50 dp é o CHÃO do AdMob: não existe formato de banner mais baixo. Trocar isto
+ * por um formato maior é REABRIR a decisão de produto, não ajustar layout — o
+ * teste em `ads.test.ts` fixa o valor justamente para a mudança ser deliberada.
  */
 export const BANNER_SIZE: BannerSizeChoice = 'BANNER';
 
