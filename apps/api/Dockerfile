@@ -37,4 +37,7 @@ COPY --from=builder /app/apps/api/package.json ./apps/api/package.json
 WORKDIR /app/apps/api
 EXPOSE 3000
 # Aplica migrations e sobe a API.
-CMD ["sh", "-c", "pnpm exec prisma migrate deploy && node dist/main.js"]
+# O .npmrc usa node-linker=hoisted, entao os bins vivem em /app/node_modules/.bin
+# e nao em apps/api/node_modules/.bin. Chamar o binario direto tambem evita o
+# download do pnpm pelo corepack a cada boot do container.
+CMD ["sh", "-c", "/app/node_modules/.bin/prisma migrate deploy && node dist/main.js"]
