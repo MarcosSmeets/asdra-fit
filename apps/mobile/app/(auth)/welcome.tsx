@@ -3,6 +3,7 @@ import React, { useCallback, useState } from 'react';
 import { View } from 'react-native';
 import { AdariPortrait, Button, Card, CelestialDivider, Screen, Text } from '@/components';
 import { ONLINE_FEATURES_ENABLED } from '@/config/features';
+import { ACCOUNT_BENEFITS } from '@/constants/accountBenefits';
 import { BRAND } from '@/constants/brand';
 import { useSessionStore } from '@/stores/sessionStore';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -74,8 +75,7 @@ export default function Welcome(): React.ReactElement {
 
           <Card variant="surfaceAlt">
             <Text variant="caption" color="textMuted" center>
-              A conta é opcional. Ela serve para participar de ligas com amigos e manter um backup do
-              seu progresso. Você pode criar uma conta depois, quando quiser.
+              {`A conta é opcional. ${ACCOUNT_BENEFITS.requiresAccount} Você pode criar uma conta depois, quando quiser.`}
             </Text>
           </Card>
         </>

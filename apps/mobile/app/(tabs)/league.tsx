@@ -18,6 +18,7 @@ import {
 } from '@/components';
 import { ApiError, apiRequest } from '@/api/client';
 import { ONLINE_FEATURES_ENABLED } from '@/config/features';
+import { ACCOUNT_BENEFITS } from '@/constants/accountBenefits';
 import { useOnline } from '@/hooks/useOnline';
 import { useSessionStore } from '@/stores/sessionStore';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -178,8 +179,7 @@ function LeagueScreen(): React.ReactElement {
         <Card style={{ gap }}>
           <Text variant="section">Ligas privadas exigem uma conta</Text>
           <Text variant="body" color="textMuted">
-            Para criar ou participar de ligas com amigos, você precisa de uma conta. Ao criar uma
-            conta, seu perfil local e todo o seu progresso são mantidos — nada é perdido.
+            {`${ACCOUNT_BENEFITS.requiresAccount} ${ACCOUNT_BENEFITS.keepsLocalProgress}`}
           </Text>
           <Button
             label="Criar conta"

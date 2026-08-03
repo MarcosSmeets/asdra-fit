@@ -1,8 +1,10 @@
-import { useRouter } from 'expo-router';
+import { Redirect, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { Button, Card, ErrorState, LoadingState, Screen, SectionHeader, Text } from '@/components';
 import { ApiError } from '@/api/client';
+import { ONLINE_FEATURES_ENABLED } from '@/config/features';
+import { ACCOUNT_BENEFITS } from '@/constants/accountBenefits';
 import {
   challengeDuel,
   getDuelHistory,
@@ -12,6 +14,7 @@ import {
   type DuelSummary,
 } from '@/services/duelService';
 import { useGameStore } from '@/stores/gameStore';
+import { useSessionStore } from '@/stores/sessionStore';
 import { useTheme } from '@/theme/ThemeProvider';
 
 function errorMessage(e: unknown, fallback: string): string {
@@ -29,6 +32,7 @@ export default function DuelsScreen(): React.ReactElement {
   const theme = useTheme();
   const router = useRouter();
   const reloadGame = useGameStore((s) => s.load);
+  const mode = useSessionStore((s) => s.mode);
 
   const [opponents, setOpponents] = useState<DuelOpponent[] | null>(null);
   const [history, setHistory] = useState<DuelSummary[]>([]);
@@ -39,6 +43,12 @@ export default function DuelsScreen(): React.ReactElement {
   const [lastResult, setLastResult] = useState<DuelResult | null>(null);
 
   const load = useCallback(async () => {
+    // Sem conta não há o que carregar: as duas chamadas são autenticadas e
+    // devolveriam 401, que a tela mostrava como "verifique sua conexão".
+    if (!ONLINE_FEATURES_ENABLED || mode !== 'account') {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -46,11 +56,13 @@ export default function DuelsScreen(): React.ReactElement {
       setOpponents(opps);
       setHistory(hist);
     } catch (e) {
-      setError(errorMessage(e, 'Não foi possível carregar os duelos. Verifique sua conexão.'));
+      setError(e instanceof ApiError && e.status === 401
+        ? 'Sua sessão expirou. Entre novamente para ver os duelos.'
+        : errorMessage(e, 'Não foi possível carregar os duelos. Verifique sua conexão.'));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [mode]);
 
   useEffect(() => {
     void load();
@@ -75,6 +87,33 @@ export default function DuelsScreen(): React.ReactElement {
     },
     [reloadGame, load],
   );
+
+  // `/duels` é rota pública do expo-router e aceita deep link, então a guarda não
+  // pode depender apenas da porta de entrada na tela de Liga.
+  if (!ONLINE_FEATURES_ENABLED) return <Redirect href="/(tabs)" />;
+
+  if (mode !== 'account') {
+    return (
+      <Screen scroll testID="duels-screen">
+        <SectionHeader
+          title="Duelos amistosos"
+          subtitle="Desafie pessoas da sua liga em combates rápidos e equilibrados."
+        />
+        <Card style={{ gap: theme.spacing.md }}>
+          <Text variant="section">Duelos exigem uma conta</Text>
+          <Text variant="body" color="textMuted">
+            {`${ACCOUNT_BENEFITS.requiresAccount} ${ACCOUNT_BENEFITS.keepsLocalProgress}`}
+          </Text>
+          <Button label="Criar conta" onPress={() => router.push('/(auth)/register')}
+            accessibilityHint="Abre a tela de criação de conta." />
+          <Button label="Já tenho conta / Entrar" variant="secondary"
+            onPress={() => router.push('/(auth)/login')}
+            accessibilityHint="Abre a tela de login." />
+          <Button label="Voltar" variant="ghost" onPress={() => router.back()} />
+        </Card>
+      </Screen>
+    );
+  }
 
   if (loading && !opponents) {
     return (
