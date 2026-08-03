@@ -12,7 +12,14 @@ import { Throttle } from '@nestjs/throttler';
 import type { AuthenticatedRequest } from '../../common/authenticated-request';
 import { CurrentUserId, Public } from '../../common/decorators';
 import { AuthService } from './auth.service';
-import { ConvertLocalProfileDto, LoginDto, RefreshDto, RegisterDto } from './dto';
+import {
+  ConvertLocalProfileDto,
+  ForgotPasswordDto,
+  LoginDto,
+  RefreshDto,
+  RegisterDto,
+  ResetPasswordDto,
+} from './dto';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -34,6 +41,29 @@ export class AuthController {
   @ApiOperation({ summary: 'Autentica e retorna tokens (access + refresh).' })
   login(@Body() dto: LoginDto, @Req() req: AuthenticatedRequest) {
     return this.auth.login(dto, req.correlationId);
+  }
+
+  @Public()
+  @Post('forgot-password')
+  @HttpCode(HttpStatus.OK)
+  // Mesmo limite estrito do login: evita abuso do envio de códigos.
+  @Throttle({ default: { limit: 5, ttl: 900_000 } })
+  @ApiOperation({ summary: 'Solicita um código de redefinição de senha por e-mail.' })
+  forgotPassword(@Body() dto: ForgotPasswordDto, @Req() req: AuthenticatedRequest) {
+    return this.auth.forgotPassword(dto, req.correlationId);
+  }
+
+  @Public()
+  @Post('reset-password')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  // Limite estrito por IP: um código de 6 dígitos não sobrevive a força bruta lenta.
+  @Throttle({ default: { limit: 5, ttl: 900_000 } })
+  @ApiOperation({ summary: 'Redefine a senha com o código recebido e revoga as sessões.' })
+  async resetPassword(
+    @Body() dto: ResetPasswordDto,
+    @Req() req: AuthenticatedRequest,
+  ): Promise<void> {
+    await this.auth.resetPassword(dto, req.correlationId);
   }
 
   @Public()

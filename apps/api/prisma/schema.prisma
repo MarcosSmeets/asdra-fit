@@ -78,6 +78,7 @@ enum SyncEntityType {
   adari_interaction
   observatory_state
   food_inventory
+  adari_evolution
 }
 
 enum SyncOperationType {
@@ -104,6 +105,7 @@ model User {
   profile                Profile?
   devices                Device[]
   refreshTokens          RefreshToken[]
+  passwordResetTokens    PasswordResetToken[]
   userCreature           UserCreature?
   weeklyGoals            WeeklyGoal[]
   activities             Activity[]
@@ -193,7 +195,10 @@ model UserCreature {
   nickname            String?
   level               Int      @default(1)
   xp                  Int      @default(0)
+  /// 0=BASE, 1=EV 1, 2=EV 2, 3=Evolução Perfeita. Só muda via operação
+  /// `adari_evolution` validada (nunca pelo upsert de user_creature).
   evolutionStage      Int      @default(0)
+  evolvedAt           DateTime?
   strength            Int      @default(0)
   endurance           Int      @default(0)
   agility             Int      @default(0)
@@ -218,6 +223,67 @@ model UserCreature {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   interactions AdariInteraction[]
+  evolutionHistory UserAdariEvolutionHistory[]
+  attributeStates UserAdariAttributeState[]
+  levelUpRewards UserAdariLevelUpReward[]
+}
+
+/// Progressão de atributo por TREINO (Build 6). `trainingTotal` é o acumulado de
+/// pontos vindo das atividades aceitas; `value` e `trainingProgress` são
+/// MATERIALIZADOS pelo servidor a partir dele + nível + estágio evolutivo.
+/// Reprocessar o mesmo lote dá o mesmo resultado (idempotente por construção).
+model UserAdariAttributeState {
+  id                 String   @id @default(uuid())
+  userAdariId        String
+  attribute          String
+  value              Int      @default(0)
+  trainingTotal      Int      @default(0)
+  trainingProgress   Int      @default(0)
+  progressRequired   Int      @default(100)
+  calculationVersion Int      @default(1)
+  updatedAt          DateTime @updatedAt
+
+  userAdari UserCreature @relation(fields: [userAdariId], references: [id], onDelete: Cascade)
+
+  @@unique([userAdariId, attribute])
+  @@index([userAdariId])
+}
+
+/// Histórico de ganhos por nível (Build 6). Existe para celebração e auditoria:
+/// o VALOR do atributo já deriva do nível, então uma linha ausente nunca
+/// corrompe stats. Única por nível alcançado — sync não duplica.
+model UserAdariLevelUpReward {
+  id                 String   @id @default(uuid())
+  userAdariId        String
+  fromLevel          Int
+  toLevel            Int
+  attributeGains     Json
+  operationId        String   @unique
+  calculationVersion Int      @default(1)
+  createdAt          DateTime @default(now())
+
+  userAdari UserCreature @relation(fields: [userAdariId], references: [id], onDelete: Cascade)
+
+  @@unique([userAdariId, toLevel])
+  @@index([userAdariId, toLevel])
+}
+
+// Histórico de evolução (Build 5): uma linha por transição de estágio, única
+// por (adari, origem, destino). Fonte de auditoria e idempotência do sync.
+model UserAdariEvolutionHistory {
+  id                 String   @id @default(uuid())
+  userAdariId        String
+  fromStage          Int
+  toStage            Int
+  unlockedAt         DateTime
+  triggeringReason   String
+  calculationVersion Int      @default(1)
+  createdAt          DateTime @default(now())
+
+  userAdari UserCreature @relation(fields: [userAdariId], references: [id], onDelete: Cascade)
+
+  @@unique([userAdariId, fromStage, toStage])
+  @@index([userAdariId])
 }
 
 model FoodDefinition {
@@ -397,6 +463,9 @@ model Activity {
   moodAfter         Mood?
   hasLocalPhoto     Boolean       @default(false)
   remotePhotoKey    String?
+  // Sinal de movimento do aparelho (informativo; NUNCA entra no cálculo de recompensa).
+  movementSteps     Int?
+  movementSignal    String?
   isScored          Boolean       @default(true)
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
@@ -555,6 +624,21 @@ model RefreshToken {
   revokedAt         DateTime?
   replacedByTokenId String?
   createdAt         DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model PasswordResetToken {
+  id        String    @id @default(uuid())
+  userId    String
+  // Hash de sha256("pwreset:<userId>:<código>") — o código nunca é persistido.
+  codeHash  String
+  expiresAt DateTime
+  usedAt    DateTime?
+  attempts  Int       @default(0)
+  createdAt DateTime  @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 

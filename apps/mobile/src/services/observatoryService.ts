@@ -4,6 +4,7 @@ import {
   FOOD_DEFINITIONS,
   getFoodDefinition,
   recalculateSatiety,
+  regenerateFoodStock,
 } from '@ad-sidera/shared';
 import { getDatabase } from '../db/database';
 import type {
@@ -64,6 +65,32 @@ async function ensureStateAndStarterFood(now: string): Promise<ObservatoryStateR
   return state;
 }
 
+/**
+ * Reposição natural do inventário (sem loja): calcula pelo tempo decorrido e
+ * grava o resultado. É estado LOCAL — não gera operação de sincronização.
+ */
+async function regenerateFoodInventory(now: string): Promise<void> {
+  const db = await getDatabase();
+  const rows = await observatoryRepository.inventory(db);
+  const byId = new Map(rows.map((item) => [item.foodDefinitionId, item]));
+  for (const food of FOOD_DEFINITIONS) {
+    const current = byId.get(food.id);
+    if (!current) {
+      // Alimento ainda sem linha: começa vazio e passa a repor a partir de agora.
+      await observatoryRepository.setFood(db, food.id, 0, now);
+      continue;
+    }
+    const next = regenerateFoodStock(
+      food,
+      { quantity: current.quantity, updatedAt: current.updatedAt },
+      now,
+    );
+    if (next.quantity !== current.quantity || next.updatedAt !== current.updatedAt) {
+      await observatoryRepository.setFood(db, food.id, next.quantity, next.updatedAt);
+    }
+  }
+}
+
 export async function loadObservatory(): Promise<ObservatorySnapshot> {
   const db = await getDatabase();
   const now = nowIso();
@@ -80,6 +107,7 @@ export async function loadObservatory(): Promise<ObservatorySnapshot> {
   };
   if (satiety.decayed > 0) await creatureRepository.updateCare(db, hydrated);
   const state = await ensureStateAndStarterFood(now);
+  await regenerateFoodInventory(now);
   const inventory = await observatoryRepository.inventory(db);
   return { creature: hydrated, inventory, state };
 }
@@ -251,7 +279,9 @@ export async function saveObservatoryState(
 ): Promise<ObservatoryStateRecord> {
   const db = await getDatabase();
   const now = nowIso();
-  const current = (await observatoryRepository.state(db)) ?? defaultState(now);
+  // O tutorial pode ser concluído antes da primeira visita ao Observatório.
+  // Garanta que a criação antecipada do estado também entregue o inventário inicial.
+  const current = await ensureStateAndStarterFood(now);
   const next: ObservatoryStateRecord = {
     ...current,
     ...patch,

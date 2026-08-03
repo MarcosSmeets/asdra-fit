@@ -1,4 +1,4 @@
-import type { ActivityType, Intensity, Mood } from '@ad-sidera/shared';
+import type { ActivityType, Intensity, Mood, MovementSignal } from '@ad-sidera/shared';
 import type { ActivityRecord, ActivityRewardRecord } from '../models';
 import type { SqlDatabase, SqlValue } from '../types';
 
@@ -24,6 +24,8 @@ interface ActivityRow {
   mood_after: string | null;
   has_local_photo: number;
   local_photo_uri: string | null;
+  movement_steps: number | null;
+  movement_signal: string | null;
   is_scored: number;
   created_at: string;
   updated_at: string;
@@ -45,6 +47,8 @@ function toRecord(row: ActivityRow): ActivityRecord {
     moodAfter: row.mood_after as Mood | null,
     hasLocalPhoto: row.has_local_photo === 1,
     localPhotoUri: row.local_photo_uri,
+    movementSteps: row.movement_steps,
+    movementSignal: row.movement_signal as MovementSignal | null,
     isScored: row.is_scored === 1,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -58,9 +62,10 @@ export const activityRepository = {
     await db.runAsync(
       `INSERT INTO activities
        (id, client_generated_id, activity_type, occurred_at, duration_minutes, perceived_intensity,
-        notes, location, mood_before, mood_after, has_local_photo, local_photo_uri, is_scored,
+        notes, location, mood_before, mood_after, has_local_photo, local_photo_uri,
+        movement_steps, movement_signal, is_scored,
         created_at, updated_at, deleted_at, sync_status)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       [
         a.id,
         a.clientGeneratedId,
@@ -74,6 +79,8 @@ export const activityRepository = {
         a.moodAfter,
         a.hasLocalPhoto ? 1 : 0,
         a.localPhotoUri,
+        a.movementSteps,
+        a.movementSignal,
         a.isScored ? 1 : 0,
         a.createdAt,
         a.updatedAt,
@@ -120,7 +127,8 @@ export const activityRepository = {
       `UPDATE activities SET
         activity_type = ?, occurred_at = ?, duration_minutes = ?, perceived_intensity = ?,
         notes = ?, location = ?, mood_before = ?, mood_after = ?, has_local_photo = ?,
-        local_photo_uri = ?, is_scored = ?, updated_at = ?, deleted_at = ?, sync_status = ?
+        local_photo_uri = ?, movement_steps = ?, movement_signal = ?, is_scored = ?,
+        updated_at = ?, deleted_at = ?, sync_status = ?
        WHERE id = ?`,
       [
         a.activityType,
@@ -133,6 +141,8 @@ export const activityRepository = {
         a.moodAfter,
         a.hasLocalPhoto ? 1 : 0,
         a.localPhotoUri,
+        a.movementSteps,
+        a.movementSignal,
         a.isScored ? 1 : 0,
         a.updatedAt,
         a.deletedAt,

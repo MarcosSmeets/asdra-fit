@@ -1,14 +1,13 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { AccessibilityInfo, useColorScheme } from 'react-native';
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import { AccessibilityInfo } from 'react-native';
 import { buildTheme, type Theme } from './tokens';
 
-// Modo claro é a experiência principal: default light; escuro só quando o SO pede.
-const ThemeContext = createContext<Theme>(buildTheme('light'));
+// Build 5: identidade cósmica escura ÚNICA — o tema não segue mais o SO.
+const ThemeContext = createContext<Theme>(buildTheme());
 const ReducedMotionContext = createContext<boolean>(false);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }): React.ReactElement {
-  const scheme = useColorScheme();
-  const theme = useMemo(() => buildTheme(scheme === 'dark' ? 'dark' : 'light'), [scheme]);
+  const theme = buildTheme();
 
   const [reducedMotion, setReducedMotion] = useState(false);
   useEffect(() => {

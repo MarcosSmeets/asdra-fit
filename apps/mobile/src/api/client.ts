@@ -21,6 +21,31 @@ interface RequestOptions {
   _retried?: boolean;
 }
 
+/**
+ * Sem isto, um endereço de API errado (IP da máquina mudou, servidor fora do ar)
+ * deixa o botão girando por mais de um minuto e parece que o app "não chamou"
+ * o login. Com o corte, a tela mostra em segundos o que está errado.
+ */
+const REQUEST_TIMEOUT_MS = 15_000;
+
+async function fetchWithTimeout(url: string, init: RequestInit): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } catch {
+    throw new ApiError(
+      controller.signal.aborted
+        ? `O servidor em ${BASE_URL} não respondeu a tempo. Confira se a API está no ar.`
+        : `Não foi possível falar com o servidor em ${BASE_URL}. Confira a conexão e o endereço da API.`,
+      503,
+      controller.signal.aborted ? 'NETWORK_TIMEOUT' : 'NETWORK_UNREACHABLE',
+    );
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 let refreshInFlight: Promise<boolean> | null = null;
 
 async function performTokenRefresh(): Promise<boolean> {
@@ -28,7 +53,7 @@ async function performTokenRefresh(): Promise<boolean> {
   if (!refreshToken) {
     return false;
   }
-  const res = await fetch(`${BASE_URL}/auth/refresh`, {
+  const res = await fetchWithTimeout(`${BASE_URL}/auth/refresh`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ refreshToken }),
@@ -38,17 +63,17 @@ async function performTokenRefresh(): Promise<boolean> {
       await tokenStore.clear();
       return false;
     }
-    throw new ApiError('NÃ£o foi possÃ­vel renovar sua sessÃ£o agora.', res.status, 'REFRESH_UNAVAILABLE');
+    throw new ApiError('Não foi possível renovar sua sessão agora.', res.status, 'REFRESH_UNAVAILABLE');
   }
   const data = (await res.json()) as { accessToken: string; refreshToken: string };
   if (!data.accessToken || !data.refreshToken) {
-    throw new ApiError('Resposta de autenticaÃ§Ã£o invÃ¡lida.', 502, 'INVALID_REFRESH_RESPONSE');
+    throw new ApiError('Resposta de autenticação inválida.', 502, 'INVALID_REFRESH_RESPONSE');
   }
   await tokenStore.setTokens(data.accessToken, data.refreshToken);
   return true;
 }
 
-/** Serializa a rotaÃ§Ã£o: requests simultÃ¢neos nunca reutilizam o mesmo refresh token. */
+/** Serializa a rotação: requests simultâneos nunca reutilizam o mesmo refresh token. */
 function refreshTokens(): Promise<boolean> {
   if (!refreshInFlight) {
     refreshInFlight = performTokenRefresh().finally(() => {
@@ -71,11 +96,11 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
     if (token) {
       headers.Authorization = `Bearer ${token}`;
     } else {
-      throw new ApiError('Sua sessÃ£o expirou. Entre novamente para sincronizar.', 401, 'SESSION_EXPIRED');
+      throw new ApiError('Sua sessão expirou. Entre novamente para sincronizar.', 401, 'SESSION_EXPIRED');
     }
   }
 
-  const res = await fetch(`${BASE_URL}${path}`, {
+  const res = await fetchWithTimeout(`${BASE_URL}${path}`, {
     method,
     headers,
     body: body !== undefined ? JSON.stringify(body) : undefined,

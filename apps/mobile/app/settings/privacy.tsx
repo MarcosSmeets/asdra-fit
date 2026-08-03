@@ -1,41 +1,63 @@
 import { Stack, useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Alert, View } from 'react-native';
 import { Button, Card, CelestialDivider, Screen, SectionHeader, Text } from '@/components';
-import { getDatabase } from '@/db/database';
-import { APP_STATE_KEYS, appStateRepository } from '@/db/repositories/appStateRepository';
-import { useSessionStore } from '@/stores/sessionStore';
+import {
+  getLocalInsights,
+  isAnalyticsEnabled,
+  setAnalyticsEnabled,
+  type LocalInsights,
+} from '@/services/analyticsService';
+import { wipeAllLocalData } from '@/services/privacyService';
 import { useTheme } from '@/theme/ThemeProvider';
+import { ONLINE_FEATURES_ENABLED } from '@/config/features';
 
 export default function PrivacySettings(): React.ReactElement {
   const theme = useTheme();
   const router = useRouter();
   const [working, setWorking] = useState(false);
+  const [analyticsOn, setAnalyticsOn] = useState(false);
+  const [insights, setInsights] = useState<LocalInsights | null>(null);
+
+  useEffect(() => {
+    void (async () => {
+      const enabled = await isAnalyticsEnabled();
+      setAnalyticsOn(enabled);
+      if (enabled) setInsights(await getLocalInsights());
+    })();
+  }, []);
+
+  const toggleAnalytics = useCallback(async () => {
+    const next = !analyticsOn;
+    await setAnalyticsEnabled(next);
+    setAnalyticsOn(next);
+    setInsights(next ? await getLocalInsights() : null);
+  }, [analyticsOn]);
 
   const performReset = async (): Promise<void> => {
     setWorking(true);
     try {
-      const db = await getDatabase();
-      // MVP SEGURO: por ora apenas reiniciamos o onboarding (não apagamos atividades,
-      // o Adari ou fotos). O wipe local completo — apagar todas as tabelas locais
-      // (activities, creature_state, weekly_goal, rewards) e as fotos em disco — é um
-      // follow-up documentado no backlog.
-      await appStateRepository.setBool(db, APP_STATE_KEYS.ONBOARDING_COMPLETE, false);
-      useSessionStore.setState({ onboardingComplete: false });
+      await wipeAllLocalData();
       router.replace('/intro');
     } catch {
       setWorking(false);
+      Alert.alert(
+        'Não foi possível apagar tudo',
+        'Algo interrompeu a remoção dos dados. Tente novamente; nenhum dado novo foi criado.',
+      );
     }
   };
 
   const confirmReset = (): void => {
     Alert.alert(
       'Apagar dados locais?',
-      'Por segurança, esta versão apenas reinicia o app e leva você de volta ao início. A remoção completa dos dados locais está no nosso roteiro.',
+      ONLINE_FEATURES_ENABLED
+        ? 'Isso remove permanentemente deste dispositivo: atividades, fotos privadas, seu Adari, progresso e a sessão salva. Esta ação não pode ser desfeita. Contas e ligas no servidor não são afetadas.'
+        : 'Isso remove permanentemente atividades, fotos privadas, seu Adari e todo o progresso deste dispositivo. O beta não possui backup; esta ação não pode ser desfeita.',
       [
         { text: 'Cancelar', style: 'cancel' },
         {
-          text: 'Continuar',
+          text: 'Apagar tudo',
           style: 'destructive',
           onPress: () => {
             void performReset();
@@ -68,13 +90,23 @@ export default function PrivacySettings(): React.ReactElement {
         </Text>
       </Card>
 
-      <Card style={{ gap: theme.spacing.sm }}>
-        <Text variant="section">Sincronização mínima</Text>
-        <Text variant="body" color="textMuted">
-          Se você usar uma conta, a sincronização envia apenas metadados — como a contagem de
-          atividades e o seu progresso. As fotos nunca saem do dispositivo.
-        </Text>
-      </Card>
+      {ONLINE_FEATURES_ENABLED ? (
+        <Card style={{ gap: theme.spacing.sm }}>
+          <Text variant="section">Sincronização mínima</Text>
+          <Text variant="body" color="textMuted">
+            Se você usar uma conta, a sincronização envia apenas metadados — como a contagem de
+            atividades e o seu progresso. As fotos nunca saem do dispositivo.
+          </Text>
+        </Card>
+      ) : (
+        <Card style={{ gap: theme.spacing.sm }}>
+          <Text variant="section">Dados apenas neste dispositivo</Text>
+          <Text variant="body" color="textMuted">
+            Este beta não possui conta nem backup. Desinstalar o aplicativo ou apagar os dados do
+            sistema remove permanentemente seu progresso e suas fotos privadas.
+          </Text>
+        </Card>
+      )}
 
       <Card style={{ gap: theme.spacing.sm }}>
         <Text variant="section">LGPD</Text>
@@ -82,6 +114,26 @@ export default function PrivacySettings(): React.ReactElement {
           Tratamos seus dados seguindo os princípios da LGPD: finalidade clara, coleta mínima e
           controle nas suas mãos.
         </Text>
+      </Card>
+
+      <Card style={{ gap: theme.spacing.sm }}>
+        <Text variant="section">Insights locais (opcional)</Text>
+        <Text variant="body" color="textMuted">
+          Quando ativado, o app conta seus próprios usos — dias ativos, atividades, batalhas —
+          somente neste dispositivo. Nada é enviado a servidores. Desativar apaga o histórico.
+        </Text>
+        <Button
+          label={analyticsOn ? 'Insights locais: ativados' : 'Insights locais: desativados'}
+          variant="secondary"
+          onPress={() => void toggleAnalytics()}
+          accessibilityHint="Ativa ou desativa a contagem local de uso do app."
+        />
+        {analyticsOn && insights ? (
+          <Text variant="caption" color="textMuted">
+            Últimos 30 dias: {insights.activeDays30} dias ativos · {insights.activities30}{' '}
+            atividades · {insights.battles30} batalhas · {insights.appOpens30} aberturas do app
+          </Text>
+        ) : null}
       </Card>
 
       {/* Ação destrutiva isolada, separada das seções informativas. */}

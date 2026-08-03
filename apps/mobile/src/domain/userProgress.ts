@@ -101,7 +101,9 @@ export function entryRouteForProgress(
   ready: boolean,
   mode: UserProgressEvidence['mode'],
   progress: UserProgressState,
-): '/intro' | '/onboarding' | '/(tabs)' {
+  tutorialCompleted: boolean,
+): '/intro' | '/onboarding' | '/getting-started' | '/(tabs)' {
   if (!ready || mode === null) return '/intro';
-  return progress.hasCompletedOnboarding ? '/(tabs)' : '/onboarding';
+  if (!progress.hasCompletedOnboarding) return '/onboarding';
+  return tutorialCompleted ? '/(tabs)' : '/getting-started';
 }

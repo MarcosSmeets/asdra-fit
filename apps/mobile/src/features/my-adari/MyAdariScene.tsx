@@ -1,84 +1,146 @@
 import React, { useEffect, useRef, type PropsWithChildren } from 'react';
-import { Animated, ImageBackground, StyleSheet, View } from 'react-native';
-import Svg, { Circle, Defs, Ellipse, RadialGradient, Rect, Stop } from 'react-native-svg';
-
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const OBSERVATORY_BACKGROUND = require('../../../assets/observatory/backgrounds/observatory-room-v1.png');
+import { Animated, StyleSheet, View } from 'react-native';
+import { useTheme } from '../../theme/ThemeProvider';
+import {
+  AMBIENT_PARTICLES,
+  ENVIRONMENTAL_GLOW_BANDS,
+  FOREGROUND_PARTICLES,
+} from './homeSceneLayers';
 
 interface MyAdariSceneProps extends PropsWithChildren {
   reduceMotion: boolean;
   particlesEnabled: boolean;
 }
 
-/** Planos independentes produzem profundidade sem atualizar React durante os frames. */
+/** Estrelas quadradas fixas (determinísticas) do plano distante, em % da cena. */
+const FAR_STARS: readonly { left: number; top: number; size: number; bright: boolean }[] = [
+  { left: 8, top: 6, size: 2, bright: true }, { left: 22, top: 14, size: 1, bright: false },
+  { left: 37, top: 4, size: 1, bright: false }, { left: 52, top: 11, size: 2, bright: true },
+  { left: 66, top: 5, size: 1, bright: false }, { left: 79, top: 16, size: 2, bright: false },
+  { left: 91, top: 8, size: 1, bright: true }, { left: 14, top: 26, size: 1, bright: false },
+  { left: 45, top: 22, size: 1, bright: true }, { left: 72, top: 27, size: 1, bright: false },
+  { left: 88, top: 33, size: 1, bright: false }, { left: 29, top: 34, size: 2, bright: false },
+];
+
+/**
+ * Cenário 2.5D da home em camadas (contrato em `homeSceneLayers.ts`):
+ * Background → EnvironmentalGlow → (children: sombra + sprite + HUD) →
+ * ForegroundParticles.
+ *
+ * A luz de ambiente é um HALO EM DEGRAUS (bandas concêntricas translúcidas),
+ * não mais um retângulo teal sólido — aquele bloco de cor era o "fundo verde"
+ * que aparecia recortado atrás do Adari.
+ */
 export function MyAdariScene({ reduceMotion, particlesEnabled, children }: MyAdariSceneProps): React.ReactElement {
+  const theme = useTheme();
   const farDrift = useRef(new Animated.Value(-1)).current;
-  const midPulse = useRef(new Animated.Value(0)).current;
+  const pulse = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (reduceMotion) {
       farDrift.setValue(0);
-      midPulse.setValue(0.35);
+      pulse.setValue(0.5);
       return undefined;
     }
     const drift = Animated.loop(Animated.sequence([
       Animated.timing(farDrift, { toValue: 1, duration: 7200, useNativeDriver: true }),
       Animated.timing(farDrift, { toValue: -1, duration: 7200, useNativeDriver: true }),
     ]));
-    const pulse = Animated.loop(Animated.sequence([
-      Animated.timing(midPulse, { toValue: 1, duration: 3100, useNativeDriver: true }),
-      Animated.timing(midPulse, { toValue: 0, duration: 3100, useNativeDriver: true }),
+    const breathe = Animated.loop(Animated.sequence([
+      Animated.timing(pulse, { toValue: 1, duration: 3100, useNativeDriver: true }),
+      Animated.timing(pulse, { toValue: 0, duration: 3100, useNativeDriver: true }),
     ]));
     drift.start();
-    pulse.start();
-    return () => { drift.stop(); pulse.stop(); };
-  }, [farDrift, midPulse, reduceMotion]);
+    breathe.start();
+    return () => { drift.stop(); breathe.stop(); };
+  }, [farDrift, pulse, reduceMotion]);
 
   const farX = farDrift.interpolate({ inputRange: [-1, 1], outputRange: [-4, 4] });
   const foregroundX = farDrift.interpolate({ inputRange: [-1, 1], outputRange: [3, -3] });
-  const lightOpacity = midPulse.interpolate({ inputRange: [0, 1], outputRange: [0.2, 0.42] });
+  // A luz respira de leve; nunca some por completo nem chega perto de opaca.
+  const glowBreath = pulse.interpolate({ inputRange: [0, 1], outputRange: [0.75, 1] });
+  const particleOpacity = pulse.interpolate({ inputRange: [0, 1], outputRange: [0.3, 0.85] });
+
+  const palette = theme.palette;
 
   return (
-    <ImageBackground source={OBSERVATORY_BACKGROUND} resizeMode="cover" style={styles.scene} imageStyle={styles.backgroundImage}>
-      <View pointerEvents="none" style={styles.depthShade} />
+    <View style={[styles.scene, { backgroundColor: palette.cosmic.deepest }]}>
+      {/* ── Background: céu em faixas duras + estrelas com parallax ───────── */}
+      <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+        <View style={{ flex: 3, backgroundColor: palette.cosmic.deepest }} />
+        <View style={{ flex: 2, backgroundColor: palette.cosmic.deep }} />
+        <View style={{ flex: 2, backgroundColor: palette.cosmic.midnight }} />
+        <View style={{ flex: 1, backgroundColor: palette.cosmic.deep }} />
+      </View>
       <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { transform: [{ translateX: farX }] }]}>
-        <Svg width="100%" height="100%" viewBox="0 0 100 160" preserveAspectRatio="none">
-          <Defs>
-            <RadialGradient id="skyGlow" cx="50%" cy="30%" rx="65%" ry="55%">
-              <Stop offset="0" stopColor="#7FC9C3" stopOpacity="0.22" />
-              <Stop offset="1" stopColor="#071426" stopOpacity="0" />
-            </RadialGradient>
-          </Defs>
-          <Rect width="100" height="160" fill="url(#skyGlow)" />
-          {particlesEnabled ? <><Circle cx="12" cy="20" r="0.7" fill="#F4D88A" opacity="0.8" /><Circle cx="84" cy="29" r="0.6" fill="#F7F1E7" opacity="0.7" /><Circle cx="74" cy="54" r="0.45" fill="#8CCDC6" opacity="0.8" /><Circle cx="24" cy="63" r="0.5" fill="#F7F1E7" opacity="0.55" /></> : null}
-        </Svg>
+        {FAR_STARS.map((star, index) => (
+          <View key={index} style={{
+            position: 'absolute', left: `${star.left}%`, top: `${star.top}%`,
+            width: star.size * theme.pixelUnit, height: star.size * theme.pixelUnit,
+            backgroundColor: star.bright ? palette.stellar.lightGold : palette.stellar.white,
+            opacity: star.bright ? 0.9 : 0.55,
+          }} />
+        ))}
+        {particlesEnabled ? AMBIENT_PARTICLES.map((particle, index) => (
+          <View key={`ambient-${index}`} style={{
+            position: 'absolute', left: `${particle.left}%`, top: `${particle.top}%`,
+            width: particle.size * theme.pixelUnit, height: particle.size * theme.pixelUnit,
+            backgroundColor: palette.energy.cyan, opacity: 0.4,
+          }} />
+        )) : null}
       </Animated.View>
-      <Animated.View pointerEvents="none" style={[styles.midLight, { opacity: lightOpacity }]} />
-      <View pointerEvents="none" style={styles.floorLight} />
+
+      {/* ── EnvironmentalGlow: halo concêntrico translúcido (nunca uma placa) ── */}
+      <Animated.View pointerEvents="none" style={[styles.glowEnvelope, { opacity: glowBreath }]}>
+        {ENVIRONMENTAL_GLOW_BANDS.map((band, index) => (
+          <View
+            key={index}
+            style={{
+              position: 'absolute',
+              width: `${band.scale * 100}%`,
+              height: `${band.scale * 100}%`,
+              backgroundColor: palette.energy.violet,
+              opacity: band.opacity,
+            }}
+          />
+        ))}
+      </Animated.View>
+
+      {/* ── AdariShadow + AdariSprite + HUD (children) ────────────────────── */}
       {children}
+
+      {/* ── ForegroundParticles: só abaixo da faixa do rosto ──────────────── */}
+      {particlesEnabled ? (
+        <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { opacity: particleOpacity }]}>
+          {FOREGROUND_PARTICLES.map((particle, index) => (
+            <View key={index} style={{
+              position: 'absolute', left: `${particle.left}%`, top: `${particle.top}%`,
+              width: particle.size * theme.pixelUnit, height: particle.size * theme.pixelUnit,
+              backgroundColor: palette.stellar.lightGold,
+            }} />
+          ))}
+        </Animated.View>
+      ) : null}
+
+      {/* Vinheta inferior: dá profundidade sem tocar no personagem. */}
       <Animated.View pointerEvents="none" style={[styles.foreground, { transform: [{ translateX: foregroundX }] }]}>
-        <Svg width="100%" height="100%" viewBox="0 0 100 30" preserveAspectRatio="none">
-          <Ellipse cx="50" cy="30" rx="57" ry="20" fill="#020A14" opacity="0.62" />
-          <Ellipse cx="50" cy="28" rx="34" ry="6" fill="#C8A85B" opacity="0.12" />
-        </Svg>
+        <View style={[styles.foregroundBand, { backgroundColor: palette.cosmic.deepest, opacity: 0.55 }]} />
+        <View style={[styles.foregroundEdge, { backgroundColor: palette.stellar.gold, opacity: 0.14 }]} />
       </Animated.View>
-    </ImageBackground>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  scene: { flex: 1, overflow: 'hidden', backgroundColor: '#061426' },
-  backgroundImage: { transform: [{ scale: 1.035 }] },
-  depthShade: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(3,12,28,0.38)' },
-  midLight: {
-    position: 'absolute', width: '78%', height: '52%', alignSelf: 'center', top: '12%',
-    borderRadius: 999, backgroundColor: '#8BCBC5', shadowColor: '#F4D88A', shadowOpacity: 0.2,
-    shadowRadius: 28, elevation: 2,
+  scene: { flex: 1, overflow: 'hidden' },
+  /** Envelope do halo: centraliza as bandas concêntricas atrás do personagem. */
+  glowEnvelope: {
+    position: 'absolute',
+    left: '10%', right: '10%', top: '20%', height: '44%',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  floorLight: {
-    position: 'absolute', left: '7%', right: '7%', top: '42%', height: '38%',
-    borderRadius: 999, backgroundColor: 'rgba(231,199,112,0.08)',
-    borderWidth: 1, borderColor: 'rgba(232,202,124,0.12)', transform: [{ scaleY: 0.48 }],
-  },
-  foreground: { position: 'absolute', left: -8, right: -8, bottom: -4, height: 120 },
+  foreground: { position: 'absolute', left: -8, right: -8, bottom: 0, height: 26, justifyContent: 'flex-end' },
+  foregroundBand: { height: 18 },
+  foregroundEdge: { position: 'absolute', top: 0, left: 0, right: 0, height: 2 },
 });

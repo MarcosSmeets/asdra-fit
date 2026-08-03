@@ -7,6 +7,7 @@ import {
 import { createZodDto } from 'nestjs-zod';
 import { CurrentUserId } from '../../common/decorators';
 import { PrismaService } from '../../prisma/prisma.service';
+import { PushService } from './push.service';
 
 class UpdateNotificationPreferenceDto extends createZodDto(updateNotificationPreferenceSchema) {}
 
@@ -48,6 +49,7 @@ class NotificationsController {
 
 @Module({
   controllers: [NotificationsController],
-  providers: [NotificationsService],
+  providers: [NotificationsService, PushService],
+  exports: [PushService],
 })
 export class NotificationsModule {}

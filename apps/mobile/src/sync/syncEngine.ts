@@ -12,6 +12,7 @@ import type {
   WeeklyGoalRecord,
   WeeklyProgressRecord,
 } from '../db/models';
+import { evolutionHistoryRepository } from '../db/repositories/evolutionHistoryRepository';
 import { profileRepository } from '../db/repositories/profileRepository';
 import { weeklyGoalRepository } from '../db/repositories/weeklyGoalRepository';
 import { weeklyProgressRepository } from '../db/repositories/weeklyProgressRepository';
@@ -117,6 +118,13 @@ async function applyServerChanges(
         moodAfter: payload.moodAfter ? String(payload.moodAfter) as ActivityRecord['moodAfter'] : null,
         hasLocalPhoto: existing?.hasLocalPhoto ?? false,
         localPhotoUri: existing?.localPhotoUri ?? null,
+        movementSteps:
+          payload.movementSteps != null
+            ? Number(payload.movementSteps)
+            : (existing?.movementSteps ?? null),
+        movementSignal: payload.movementSignal
+          ? (String(payload.movementSignal) as ActivityRecord['movementSignal'])
+          : (existing?.movementSignal ?? null),
         isScored: existing?.isScored ?? false,
         createdAt: existing?.createdAt ?? change.updatedAt,
         updatedAt: change.updatedAt,
@@ -133,7 +141,10 @@ async function applyServerChanges(
         nickname: payload.nickname ? String(payload.nickname) : null,
         level: Number(payload.level),
         xp: Number(payload.xp),
-        evolutionStage: Number(payload.evolutionStage),
+        // Estágio NUNCA regride pelo pull: uma evolução local ainda não
+        // validada no servidor não pode ser desfeita pela reconciliação.
+        evolutionStage: Math.max(Number(payload.evolutionStage), current?.evolutionStage ?? 0),
+        evolvedAt: payload.evolvedAt ? String(payload.evolvedAt) : (current?.evolvedAt ?? null),
         attributes: {
           strength: Number(payload.strength), endurance: Number(payload.endurance),
           agility: Number(payload.agility), discipline: Number(payload.discipline),
@@ -179,6 +190,30 @@ async function applyServerChanges(
           effectsEnabled: Boolean(payload.effectsEnabled),
           hapticsEnabled: Boolean(payload.hapticsEnabled),
           updatedAt: change.updatedAt,
+        });
+      }
+    } else if (change.entityType === 'adari_evolution') {
+      // Evolução validada no servidor (ex.: feita em outro aparelho): grava o
+      // histórico (INSERT OR IGNORE) e garante que o estágio local não fique atrás.
+      await evolutionHistoryRepository.insert(db, {
+        id: change.entityId,
+        userAdariId: String(payload.userAdariId),
+        fromStage: Number(payload.fromStage),
+        toStage: Number(payload.toStage),
+        unlockedAt: String(payload.unlockedAt),
+        triggeringReason: String(payload.triggeringReason ?? 'server_sync'),
+        calculationVersion: Number(payload.calculationVersion ?? 1),
+        createdAt: change.updatedAt,
+        syncStatus: 'synced',
+      });
+      const local = await creatureRepository.get(db);
+      if (local && local.evolutionStage < Number(payload.toStage)) {
+        await creatureRepository.update(db, {
+          ...local,
+          evolutionStage: Number(payload.toStage),
+          evolvedAt: String(payload.unlockedAt),
+          updatedAt: change.updatedAt,
+          syncStatus: 'synced',
         });
       }
     } else if (change.entityType === 'adari_interaction') {

@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { AVATAR_TYPES } from '../enums';
 import { GOALS } from '../enums';
 import {
+  PLAYER_AVATAR_ACCESSORIES,
   PLAYER_AVATAR_BODY_MODELS,
   PLAYER_AVATAR_HAIR_COLORS,
   PLAYER_AVATAR_HAIR_STYLES,
@@ -15,6 +16,8 @@ export const playerAvatarAppearanceSchema = z.object({
   hairStyleKey: z.enum(PLAYER_AVATAR_HAIR_STYLES),
   hairColorKey: z.enum(PLAYER_AVATAR_HAIR_COLORS),
   outfitKey: z.enum(PLAYER_AVATAR_OUTFITS),
+  /** Opcional: contas antigas não enviam; o cliente normaliza para 'none'. */
+  accessoryKey: z.enum(PLAYER_AVATAR_ACCESSORIES).optional(),
 }).strict();
 
 export const updateProfileSchema = z

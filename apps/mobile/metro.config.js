@@ -11,9 +11,9 @@ function escapedPathPattern(targetPath) {
 }
 
 config.watchFolders = [workspaceRoot];
-// A API Nest recompÃµe `dist` removendo e recriando subpastas. Como o Metro
+// A API Nest recompõe `dist` removendo e recriando subpastas. Como o Metro
 // observa a raiz do monorepo, sem este bloqueio ele tenta ler esses caminhos no
-// meio da troca e emite ENOENT mesmo que o app mobile nÃ£o dependa deles.
+// meio da troca e emite ENOENT mesmo que o app mobile não dependa deles.
 const apiBuildPath = path.resolve(workspaceRoot, 'apps/api/dist');
 const defaultBlockList = Array.isArray(config.resolver.blockList)
   ? config.resolver.blockList

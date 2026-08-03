@@ -1,8 +1,9 @@
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Pressable, Switch, View, type ViewStyle } from 'react-native';
+import { Alert, Pressable, Switch, View, type ViewStyle } from 'react-native';
 import {
   ACTIVITY_TYPES,
+  ADARI_STAGE_LABEL,
   CREATURES,
   GOALS,
   ISO_WEEKDAYS,
@@ -26,7 +27,7 @@ import {
 } from '@/components';
 import { ACTIVITY_LABELS, GOAL_LABELS, WEEKDAY_LABELS } from '@/constants/labels';
 import { BRAND } from '@/constants/brand';
-import { requestPermission, scheduleWeeklyReminders } from '@/services/notificationService';
+import { scheduleWeeklyReminders } from '@/services/notificationService';
 import {
   completeOnboarding,
   loadOnboardingDraft,
@@ -135,6 +136,7 @@ export default function Onboarding(): React.ReactElement {
 
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
   const [completedSteps, setCompletedSteps] = useState<OnboardingStepKey[]>([]);
 
@@ -155,21 +157,27 @@ export default function Onboarding(): React.ReactElement {
 
   useEffect(() => {
     let active = true;
-    void loadOnboardingDraft().then((draft) => {
-      if (!active) return;
-      setStep(Math.max(0, Math.min(TOTAL_STEPS - 1, draft.step)));
-      setDisplayName(draft.displayName);
-      setGoal(draft.goal);
-      setTargetCount(draft.targetCount);
-      setActivityTypes(draft.activityTypes as ActivityType[]);
-      setPreferredDays(draft.preferredDays);
-      setRemindersEnabled(draft.remindersEnabled);
-      setReminderHour(draft.reminderHour);
-      setCreatureKey(draft.creatureKey);
-      setAvatarAppearance(draft.avatarAppearance);
-      setCompletedSteps(draft.completedSteps);
-      setHydrated(true);
-    });
+    void loadOnboardingDraft()
+      .then((draft) => {
+        if (!active) return;
+        setStep(Math.max(0, Math.min(TOTAL_STEPS - 1, draft.step)));
+        setDisplayName(draft.displayName);
+        setGoal(draft.goal);
+        setTargetCount(draft.targetCount);
+        setActivityTypes(draft.activityTypes as ActivityType[]);
+        setPreferredDays(draft.preferredDays);
+        setRemindersEnabled(draft.remindersEnabled);
+        setReminderHour(draft.reminderHour);
+        setCreatureKey(draft.creatureKey);
+        setAvatarAppearance(draft.avatarAppearance);
+        setCompletedSteps(draft.completedSteps);
+      })
+      .catch(() => {
+        if (active) setSaveError('Não foi possível restaurar o rascunho. Você pode continuar do início.');
+      })
+      .finally(() => {
+        if (active) setHydrated(true);
+      });
     return () => { active = false; };
   }, []);
 
@@ -188,7 +196,9 @@ export default function Onboarding(): React.ReactElement {
       avatarAppearance,
       completedSteps,
     };
-    void saveOnboardingDraft(draft);
+    void saveOnboardingDraft(draft).catch(() => {
+      setSaveError('Não foi possível salvar o rascunho neste momento.');
+    });
   }, [
     hydrated, step, displayName, goal, targetCount, preferredDays, activityTypes,
     remindersEnabled, reminderHour, creatureKey, avatarAppearance, completedSteps,
@@ -227,6 +237,7 @@ export default function Onboarding(): React.ReactElement {
       return;
     }
     setSaving(true);
+    setSaveError(null);
     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
     const data: OnboardingData = {
       displayName: trimmedName,
@@ -255,18 +266,24 @@ export default function Onboarding(): React.ReactElement {
         completedSteps: finishedSteps,
       });
       if (remindersEnabled) {
-        await requestPermission();
-        await scheduleWeeklyReminders({
+        const granted = await scheduleWeeklyReminders({
           hour: reminderHour,
           minute: 0,
           weekdays: preferredDays.length > 0 ? preferredDays : [1, 2, 3, 4, 5],
         });
+        if (!granted) {
+          Alert.alert(
+            'Lembrete não ativado',
+            'A permissão foi negada. Você pode continuar normalmente e reativá-la nos ajustes do sistema.',
+          );
+        }
       }
       await completeOnboarding(data);
       await useSessionStore.getState().completeOnboarding();
       await useGameStore.getState().load();
-      router.replace('/(tabs)');
+      router.replace('/getting-started');
     } catch {
+      setSaveError('Não foi possível concluir agora. Seus dados foram preservados; tente novamente.');
       setSaving(false);
     }
   };
@@ -445,9 +462,33 @@ export default function Onboarding(): React.ReactElement {
             />
           ))}
           {selectedCreature ? (
-            <Card variant="surfaceAlt" style={{ alignItems: 'center', gap: theme.spacing.xs }}>
+            <Card variant="surfaceAlt" style={{ alignItems: 'center', gap: theme.spacing.sm }}>
               <Text variant="body" center>
                 {`Você deseja começar sua jornada com ${selectedCreature.name}?`}
+              </Text>
+              {/* Linha evolutiva completa: dá para ver no que cada Adari se torna. */}
+              <Text variant="hud" color="brandGold">Linha evolutiva</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'center', gap: theme.spacing.xs }}>
+                {selectedCreature.stages.map((stageDefinition, stageInt) => (
+                  <View key={stageDefinition.key} style={{ alignItems: 'center', width: 74, gap: 2 }}>
+                    <AdariPortrait
+                      creatureKey={selectedCreature.key}
+                      stage={stageInt}
+                      size={58}
+                      mood={stageInt === 0 ? 'happy' : 'normal'}
+                      accessibilityLabel={`${stageDefinition.name}, ${ADARI_STAGE_LABEL[stageDefinition.stage]}`}
+                    />
+                    <Text variant="caption" color={stageInt === 0 ? 'text' : 'textMuted'} center numberOfLines={1}>
+                      {stageDefinition.name}
+                    </Text>
+                    <Text variant="caption" color="textMuted" center numberOfLines={1}>
+                      {ADARI_STAGE_LABEL[stageDefinition.stage]}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+              <Text variant="caption" color="textMuted" center>
+                Todo Adari desperta na forma Base — as demais chegam com a sua constância.
               </Text>
               <Text variant="caption" color="brandGold" center>
                 Toque em Continuar para seguir com {selectedCreature.name}.
@@ -508,6 +549,12 @@ export default function Onboarding(): React.ReactElement {
           </Card>
         </View>
       )}
+
+      {saveError ? (
+        <Text variant="label" color="error" accessibilityLiveRegion="assertive">
+          {saveError}
+        </Text>
+      ) : null}
 
       <View style={{ flexDirection: 'row', gap: theme.spacing.md, marginTop: theme.spacing.md }}>
         {step > 0 && (

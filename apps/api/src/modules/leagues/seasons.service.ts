@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { getWeekBounds, rankLeague, type RankingInput } from '@ad-sidera/shared';
 import type { LeagueSeason } from '@prisma/client';
+import { PushService } from '../notifications/push.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ProgressionService } from '../progress/progression.service';
 
@@ -9,6 +10,7 @@ export class SeasonsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly progression: ProgressionService,
+    private readonly push: PushService,
   ) {}
 
   private async ownerTimezone(leagueId: string): Promise<string> {
@@ -103,11 +105,11 @@ export class SeasonsService {
     }
     const ranking = await this.liveRanking(season.leagueId, season.weekKey);
 
-    await this.prisma.$transaction(async (tx) => {
+    const didFinalize = await this.prisma.$transaction(async (tx) => {
       // Recarrega dentro da transação para garantir idempotência sob concorrência.
       const fresh = await tx.leagueSeason.findUnique({ where: { id: seasonId } });
       if (!fresh || fresh.status === 'finalized') {
-        return;
+        return false;
       }
       await tx.leagueRankingEntry.deleteMany({ where: { seasonId } });
       for (const entry of ranking) {
@@ -127,7 +129,19 @@ export class SeasonsService {
         where: { id: seasonId },
         data: { status: 'finalized', finalizedAt: new Date() },
       });
+      return true;
     });
+
+    if (didFinalize) {
+      // Best-effort: avisa cada membro do resultado congelado, sem tom competitivo agressivo.
+      for (const entry of ranking) {
+        void this.push.sendLeagueNotice(entry.userId, {
+          title: 'Temporada encerrada',
+          body: `O ranking da semana foi fechado — você terminou em ${entry.position}º. Uma nova semana começou!`,
+          data: { type: 'season_finalized', seasonId, leagueId: season.leagueId },
+        });
+      }
+    }
   }
 
   listSeasons(leagueId: string) {

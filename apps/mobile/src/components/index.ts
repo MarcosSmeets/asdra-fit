@@ -10,9 +10,11 @@ export { BottomSheet } from './BottomSheet';
 export { SectionHeader } from './SectionHeader';
 export { CelestialDivider } from './CelestialDivider';
 export { WeeklyGoalCard } from './WeeklyGoalCard';
-export { CreatureAvatar } from './CreatureAvatar';
 export { LoadingState, EmptyState, ErrorState, OfflineBanner, Skeleton } from './StateViews';
 export { SyncStatus, type SyncStatusProps } from './SyncStatus';
+
+// Design system pixel 32-bit (Build 5) — API canônica para novas telas
+export * from './pixel';
 
 // Ícones (SVG)
 export { StarIcon } from './icons/StarIcon';
@@ -37,6 +39,7 @@ export {
 // Adari
 export { AdariPortrait, type AdariMood } from './adari/AdariPortrait';
 export { AdariAnimator } from './adari/AdariAnimator';
+export { AdariRenderer, type AdariRendererProps } from './adari/AdariRenderer';
 export { AdariHero } from './adari/AdariHero';
 export { AdariStats } from './adari/AdariStats';
 export { AdariCard } from './adari/AdariCard';

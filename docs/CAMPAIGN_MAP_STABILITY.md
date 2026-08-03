@@ -2,26 +2,26 @@
 
 ## Invariante do grafo
 
-Todo `JourneyNode` selecionÃ¡vel precisa ter ID Ãºnico, `position.x/y` finitos e conexÃµes que apontem para IDs existentes.
+Todo `JourneyNode` selecionável precisa ter ID único, `position.x/y` finitos e conexões que apontem para IDs existentes.
 
 Helpers puros:
 
-- `getNodeByIdSafe`: retorna apenas nÃ³ com posiÃ§Ã£o finita;
+- `getNodeByIdSafe`: retorna apenas nó com posição finita;
 - `getNodePositionSafe`: impede acesso direto a `position` ausente;
-- `resolvePathNodes`: resolve o caminho de forma atÃ´mica;
-- `validateJourneyGraph`: relata ID duplicado, posiÃ§Ã£o invÃ¡lida e conexÃ£o ausente;
-- `journeyPath`: ignora conexÃµes inexistentes durante BFS.
+- `resolvePathNodes`: resolve o caminho de forma atômica;
+- `validateJourneyGraph`: relata ID duplicado, posição inválida e conexão ausente;
+- `journeyPath`: ignora conexões inexistentes durante BFS.
 
-## SeleÃ§Ã£o segura
+## Seleção segura
 
-`CampaignMap.selectNode` valida alvo, viajante atual, grafo e todos os nÃ³s do caminho antes de criar uma animaÃ§Ã£o. Se qualquer parte falhar, a seleÃ§Ã£o Ã© cancelada, a UI permanece operacional e um `console.warn` Ã© emitido somente em desenvolvimento.
+`CampaignMap.selectNode` valida alvo, viajante atual, grafo e todos os nós do caminho antes de criar uma animação. Se qualquer parte falhar, a seleção é cancelada, a UI permanece operacional e um `console.warn` é emitido somente em desenvolvimento.
 
-As linhas e o viajante usam a posiÃ§Ã£o tipada do nÃ³. Largura de layout nÃ£o finita ou menor/igual a zero Ã© ignorada.
+As linhas e o viajante usam a posição tipada do nó. Largura de layout não finita ou menor/igual a zero é ignorada.
 
-## RegressÃµes cobertas
+## Regressões cobertas
 
-- nÃ³ sem `x/y`;
+- nó sem `x/y`;
 - `connectedNodeId` inexistente;
 - caminho parcial;
-- rota vÃ¡lida;
-- seleÃ§Ã£o sem destino animÃ¡vel.
+- rota válida;
+- seleção sem destino animável.

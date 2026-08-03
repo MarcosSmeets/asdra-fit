@@ -5,8 +5,8 @@ export type DatabaseScope =
 const LOCAL_DATABASE_NAME = 'adsidera.db';
 
 /**
- * O id vem do backend, mas ainda Ã© normalizado antes de virar parte do nome do
- * arquivo. Isso tambÃ©m deixa a regra determinÃ­stica e fÃ¡cil de testar.
+ * O id vem do backend, mas ainda é normalizado antes de virar parte do nome do
+ * arquivo. Isso também deixa a regra determinística e fácil de testar.
  */
 export function databaseNameForScope(scope: DatabaseScope): string {
   if (scope.kind === 'local') return LOCAL_DATABASE_NAME;

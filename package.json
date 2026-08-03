@@ -18,6 +18,10 @@
     "test:mobile": "pnpm --filter @ad-sidera/mobile test",
     "test:api": "pnpm --filter @ad-sidera/api test",
     "lint": "turbo run lint",
+    "pixel-art:generate": "node tools/pixel-art/generate-placeholders.mjs",
+    "pixel-art:adaris:import": "node tools/pixel-art/import-adari-pose-sheets.mjs",
+    "pixel-art:adaris:build": "node tools/pixel-art/build-final-adaris.mjs",
+    "pixel-art:adaris:check": "node tools/pixel-art/build-final-adaris.mjs --check",
     "typecheck": "turbo run typecheck",
     "build": "turbo run build",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\""

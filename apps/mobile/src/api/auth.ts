@@ -79,3 +79,24 @@ export async function logout(): Promise<void> {
 export async function fetchMe(): Promise<AuthUserSummary> {
   return apiRequest<AuthUserSummary>('/auth/me');
 }
+
+/** Resposta neutra do backend: não revela se o e-mail está cadastrado. */
+export async function requestPasswordReset(email: string): Promise<void> {
+  await apiRequest<{ message: string }>('/auth/forgot-password', {
+    method: 'POST',
+    body: { email },
+    auth: false,
+  });
+}
+
+export async function resetPassword(input: {
+  email: string;
+  code: string;
+  newPassword: string;
+}): Promise<void> {
+  await apiRequest<void>('/auth/reset-password', {
+    method: 'POST',
+    body: input,
+    auth: false,
+  });
+}

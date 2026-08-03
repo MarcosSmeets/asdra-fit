@@ -1,19 +1,19 @@
-# AnimaÃ§Ãµes de Meu Adari
+# Animações de Meu Adari
 
 ## Estado
 
-`MyAdariScreenState` controla disponibilidade da interface e permanece separado de sincronizaÃ§Ã£o. `AdariVisualState` controla a apresentaÃ§Ã£o. A conversa agora possui `talkingReaction`, sem compartilhar implicitamente o estado `curious`.
+`MyAdariScreenState` controla disponibilidade da interface e permanece separado de sincronização. `AdariVisualState` controla a apresentação. A conversa agora possui `talkingReaction`, sem compartilhar implicitamente o estado `curious`.
 
-TransiÃ§Ãµes principais:
+Transições principais:
 
-- carinho: antecipaÃ§Ã£o, inclinaÃ§Ã£o, escala feliz, brilho e partÃ­culas;
-- alimentaÃ§Ã£o: item se aproxima, trÃªs ciclos de mastigaÃ§Ã£o e retorno;
-- recusa: item nÃ£o Ã© consumido e o Adari responde com movimento lateral;
-- conversa: inclinaÃ§Ã£o da cabeÃ§a, aproximaÃ§Ã£o, brilho e balÃ£o;
-- repouso/sono: postura baixa e respiraÃ§Ã£o lenta em loop;
-- pÃ³s-atividade: salto curto e celebraÃ§Ã£o;
-- idle: respiraÃ§Ã£o e piscar em loops independentes.
+- carinho: antecipação, inclinação, escala feliz, brilho e partículas;
+- alimentação: item se aproxima, três ciclos de mastigação e retorno;
+- recusa: item não é consumido e o Adari responde com movimento lateral;
+- conversa: inclinação da cabeça, aproximação, brilho e balão;
+- repouso/sono: postura baixa e respiração lenta em loop;
+- pós-atividade: salto curto e celebração;
+- idle: respiração e piscar em loops independentes.
 
-O gesto chama a persistÃªncia local depois de iniciar a reaÃ§Ã£o visual. Falha de sync nÃ£o interrompe a animaÃ§Ã£o. `reduceMotion` reduz as transiÃ§Ãµes a poses estÃ¡ticas, e `particlesEnabled` controla apenas ornamentos.
+O gesto chama a persistência local depois de iniciar a reação visual. Falha de sync não interrompe a animação. `reduceMotion` reduz as transições a poses estáticas, e `particlesEnabled` controla apenas ornamentos.
 
-As animaÃ§Ãµes usam `Animated.Value` e `useNativeDriver: true`, exceto a largura da barra de Vida em batalha. NÃ£o hÃ¡ `setState` por frame.
+As animações usam `Animated.Value` e `useNativeDriver: true`, exceto a largura da barra de Vida em batalha. Não há `setState` por frame.

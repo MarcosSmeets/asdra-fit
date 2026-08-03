@@ -14,6 +14,7 @@ import {
   Text,
 } from '@/components';
 import { companionDisplayName } from '@/constants/brand';
+import { ONLINE_FEATURES_ENABLED } from '@/config/features';
 import { useOnline } from '@/hooks/useOnline';
 import { useGameStore } from '@/stores/gameStore';
 import { useSessionStore } from '@/stores/sessionStore';
@@ -132,7 +133,7 @@ export default function ProfileScreen(): React.ReactElement {
       await flushOutbox();
       await refreshPending();
     } catch (cause) {
-      const message = cause instanceof Error ? cause.message : 'NÃ£o foi possÃ­vel sincronizar agora.';
+      const message = cause instanceof Error ? cause.message : 'Não foi possível sincronizar agora.';
       setSyncError(message);
       if (cause instanceof ApiError && cause.status === 401) {
         await signOut();
@@ -175,7 +176,7 @@ export default function ProfileScreen(): React.ReactElement {
               <AdariPortrait
                 creatureKey={creature.creatureKey}
                 size={72}
-                evolved={creature.evolutionStage > 0}
+                stage={creature.evolutionStage}
               />
               <View style={{ flex: 1, gap: 2 }}>
                 <Text variant="section">{adariName}</Text>
@@ -229,6 +230,13 @@ export default function ProfileScreen(): React.ReactElement {
           onPress={() => router.push('/settings/notifications')}
           accessibilityHint="Abre os ajustes de notificações."
         />
+        <RowDivider />
+        <NavRow
+          label="Como jogar"
+          description="Treino, progresso, cuidado, Jornada e evolução"
+          onPress={() => router.push({ pathname: '/getting-started', params: { replay: '1' } })}
+          accessibilityHint="Revê o guia inicial sem alterar seu progresso."
+        />
       </Card>
 
       <CelestialDivider />
@@ -251,12 +259,14 @@ export default function ProfileScreen(): React.ReactElement {
         />
       </Card>
 
-      <CelestialDivider />
+      {ONLINE_FEATURES_ENABLED ? (
+        <>
+          <CelestialDivider />
 
-      {/* Conta e sincronização */}
-      <SectionHeader title="Conta e sincronização" />
-      <Card>
-        <View style={{ gap: theme.spacing.md }}>
+          {/* Conta e sincronização */}
+          <SectionHeader title="Conta e sincronização" />
+          <Card>
+            <View style={{ gap: theme.spacing.md }}>
           <View
             style={{
               flexDirection: 'row',
@@ -286,7 +296,7 @@ export default function ProfileScreen(): React.ReactElement {
                   : syncInfo.lastError
                     ? 'Seu progresso continua salvo neste dispositivo. Tentaremos novamente quando a conexão permitir.'
                     : pending > 0
-                      ? `${pending} alterações salvas neste dispositivo. Próxima tentativa automática: em breve.`
+                      ? `${pending} alterações salvas neste dispositivo. Sincronizamos automaticamente ao reconectar ou reabrir o app.`
                       : `Tudo sincronizado${syncInfo.lastAttemptAt ? ` · última tentativa ${new Date(syncInfo.lastAttemptAt).toLocaleString('pt-BR')}` : ''}.`}
               </Text>
             ) : null}
@@ -305,21 +315,23 @@ export default function ProfileScreen(): React.ReactElement {
               />
             </>
           )}
-        </View>
-      </Card>
+            </View>
+          </Card>
 
-      {/* Ação destrutiva isolada, separada das ações comuns. */}
-      {mode === 'account' ? (
-        <View style={{ gap: theme.spacing.md, marginTop: theme.spacing.md }}>
-          <CelestialDivider />
-          <Button
-            label="Sair"
-            variant="danger"
-            loading={signingOut}
-            onPress={() => void onSignOut()}
-            accessibilityHint="Encerra a sessão da sua conta neste dispositivo."
-          />
-        </View>
+          {/* Ação destrutiva isolada, separada das ações comuns. */}
+          {mode === 'account' ? (
+            <View style={{ gap: theme.spacing.md, marginTop: theme.spacing.md }}>
+              <CelestialDivider />
+              <Button
+                label="Sair"
+                variant="danger"
+                loading={signingOut}
+                onPress={() => void onSignOut()}
+                accessibilityHint="Encerra a sessão da sua conta neste dispositivo."
+              />
+            </View>
+          ) : null}
+        </>
       ) : null}
     </Screen>
   );

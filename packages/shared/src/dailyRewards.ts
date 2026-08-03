@@ -1,3 +1,4 @@
+import { affinityFor } from './attributeProgression';
 import { calculateActivityReward, isRewardEligibleDuration, type ActivityReward } from './rewards';
 
 /** Atividade de um dia com o necessário para ordenar e pontuar. */
@@ -30,8 +31,13 @@ export function zeroReward(activityId: string, calculationVersion: number): DayA
     finalXp: 0,
     baseEnergy: 0,
     finalEnergy: 0,
+    baseTrainingChanges: {},
+    finalTrainingChanges: {},
     baseAttributeChanges: {},
     finalAttributeChanges: {},
+    baseTrainingPoints: 0,
+    finalTrainingPoints: 0,
+    affinity: affinityFor('outro'),
     calculationVersion,
   };
 }

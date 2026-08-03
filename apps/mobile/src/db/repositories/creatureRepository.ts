@@ -9,6 +9,7 @@ interface CreatureRow {
   level: number;
   xp: number;
   evolution_stage: number;
+  evolved_at: string | null;
   strength: number;
   endurance: number;
   agility: number;
@@ -50,6 +51,7 @@ function toState(row: CreatureRow): CreatureState {
     level: row.level,
     xp: row.xp,
     evolutionStage: row.evolution_stage,
+    evolvedAt: row.evolved_at,
     attributes,
     maxVigor: row.max_vigor ?? 100,
     vigorRecoveryRate: row.vigor_recovery_rate ?? 5,
@@ -79,12 +81,12 @@ export const creatureRepository = {
     const a = creature.attributes;
     await db.runAsync(
       `INSERT INTO user_creature
-       (id, creature_key, nickname, level, xp, evolution_stage, strength, endurance, agility,
+       (id, creature_key, nickname, level, xp, evolution_stage, evolved_at, strength, endurance, agility,
         discipline, recovery, spirit, health, energy, max_vigor, vigor_recovery_rate,
         last_vigor_calculation_at, bond, satiety, last_satiety_calculation_at,
         active_behavior_state, last_interaction_at, equipped_abilities, defeated_milestones,
         total_activities, created_at, updated_at, sync_status)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       [
         creature.id,
         creature.creatureKey,
@@ -92,6 +94,7 @@ export const creatureRepository = {
         creature.level,
         creature.xp,
         creature.evolutionStage,
+        creature.evolvedAt,
         a.strength,
         a.endurance,
         a.agility,
@@ -134,7 +137,7 @@ export const creatureRepository = {
     const a = creature.attributes;
     await db.runAsync(
       `UPDATE user_creature SET
-        nickname = ?, level = ?, xp = ?, evolution_stage = ?, strength = ?, endurance = ?,
+        nickname = ?, level = ?, xp = ?, evolution_stage = ?, evolved_at = ?, strength = ?, endurance = ?,
         agility = ?, discipline = ?, recovery = ?, spirit = ?, health = ?, energy = ?,
         max_vigor = ?, vigor_recovery_rate = ?, last_vigor_calculation_at = ?, bond = ?,
         satiety = ?, last_satiety_calculation_at = ?, active_behavior_state = ?,
@@ -146,6 +149,7 @@ export const creatureRepository = {
         creature.level,
         creature.xp,
         creature.evolutionStage,
+        creature.evolvedAt,
         a.strength,
         a.endurance,
         a.agility,

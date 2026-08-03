@@ -53,6 +53,9 @@ describe('Sync (e2e)', () => {
         durationMinutes: 40,
         occurredAt: now,
         hasLocalPhoto: false,
+        // Sinal de movimento: fato informativo — persiste, mas não altera recompensa.
+        movementSteps: 4200,
+        movementSignal: 'confirmed',
       },
     };
   }
@@ -74,6 +77,11 @@ describe('Sync (e2e)', () => {
       .set(auth())
       .expect(200);
     expect(progress.body.validActivityCount).toBe(1);
+
+    // O sinal de movimento persiste como informativo e volta no pull para outros devices.
+    const stored = await prisma.activity.findFirstOrThrow({ where: { id: entityId } });
+    expect(stored.movementSteps).toBe(4200);
+    expect(stored.movementSignal).toBe('confirmed');
   });
 
   it('é idempotente: reenviar a mesma operationId não duplica', async () => {

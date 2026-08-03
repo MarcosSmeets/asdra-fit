@@ -5,6 +5,8 @@ import {
   isRewardEligibleDuration,
   zeroReward,
   type ActivityReward,
+  type AdariAttributeProgress,
+  type AttributeSet,
 } from '@ad-sidera/shared';
 import { getDatabase } from '../db/database';
 import type { ActivityRecord, WeeklyProgressRecord } from '../db/models';
@@ -14,6 +16,7 @@ import { creatureRepository } from '../db/repositories/creatureRepository';
 import type { SqlDatabase } from '../db/types';
 import { dayBounds, nowIso } from '../utils/datetime';
 import { uuidv4 } from '../utils/id';
+import { track } from './analyticsService';
 import { enqueueOperation } from './outbox';
 import { deletePrivatePhoto } from './photoService';
 import { recalcDay } from './rewardRecalcService';
@@ -31,6 +34,9 @@ export interface RegisterActivityInput {
   moodAfter?: string;
   /** Caminho da foto JÁ armazenada no diretório privado (opcional). */
   localPhotoUri?: string;
+  /** Sinal de movimento coletado pela tela — informativo, nunca afeta recompensa. */
+  movementSteps?: number | null;
+  movementSignal?: ActivityRecord['movementSignal'];
 }
 
 export interface RegisterActivityResult {
@@ -40,6 +46,13 @@ export interface RegisterActivityResult {
   leveledUp: boolean;
   evolutionAvailable: boolean;
   weeklyProgress: WeeklyProgressRecord | null;
+  /** Progresso de treino por atributo depois desta atividade. */
+  attributeProgress: AdariAttributeProgress[];
+  /** Atributos e nível antes/depois — a celebração de nível usa isto. */
+  previousAttributes: AttributeSet | null;
+  newAttributes: AttributeSet | null;
+  previousLevel: number | null;
+  newLevel: number | null;
 }
 
 async function timezoneOf(db: SqlDatabase): Promise<string> {
@@ -93,6 +106,8 @@ export async function registerActivity(
     moodAfter: (input.moodAfter ?? null) as ActivityRecord['moodAfter'],
     hasLocalPhoto: Boolean(input.localPhotoUri),
     localPhotoUri: input.localPhotoUri ?? null,
+    movementSteps: input.movementSteps ?? null,
+    movementSignal: input.movementSignal ?? null,
     isScored: false,
     createdAt: now,
     updatedAt: now,
@@ -111,6 +126,7 @@ export async function registerActivity(
   });
   const recalc = result.recalc;
   if (!recalc) throw new Error('Não foi possível consolidar a recompensa da atividade.');
+  void track('activity_registered', { activityType: input.activityType });
   const reward = recalc.rewardByActivityId.get(id) ?? zeroReward(id, CALCULATION_VERSION);
   await rewardObservatoryFromActivity(
     id,
@@ -125,6 +141,11 @@ export async function registerActivity(
     leveledUp: recalc.leveledUp,
     evolutionAvailable: recalc.evolutionAvailable,
     weeklyProgress: recalc.weeklyProgress,
+    attributeProgress: recalc.attributeProgress,
+    previousAttributes: recalc.previousAttributes,
+    newAttributes: recalc.creature?.attributes ?? null,
+    previousLevel: recalc.previousLevel,
+    newLevel: recalc.creature?.level ?? null,
   };
 }
 

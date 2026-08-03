@@ -57,6 +57,10 @@ Validadas por Zod no boot (`env.validation.ts`) — a app **não sobe** com valo
 
 ## App mobile — EAS
 
-A distribuição do app usaria **EAS Build/Submit** (Expo Application Services) para gerar binários iOS/Android.
+A distribuição do app usa **EAS Build**. `apps/mobile/eas.json` contém os perfis
+`preview` (distribuição interna/APK) e `production`, ambos com os recursos online
+desligados para o beta offline-first.
 
-> **Nota:** o **EAS não está configurado no MVP**. Não há `eas.json` nem credenciais de loja neste repositório. Para o MVP, o app roda via **Expo Go** / build de desenvolvimento (ver [LOCAL_DEVELOPMENT](LOCAL_DEVELOPMENT.md)). A configuração de EAS (perfis de build, `EXPO_PUBLIC_API_URL` de produção, submit às lojas) fica como próximo passo.
+O primeiro build ainda exige uma ação externa do responsável: login no Expo,
+associação do projeto para gerar `extra.eas.projectId` e criação/seleção das
+credenciais de assinatura. A configuração de Submit e das lojas fica pós-beta.

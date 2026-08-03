@@ -244,6 +244,71 @@ const MIGRATIONS: string[] = [
   ALTER TABLE profile ADD COLUMN avatar_appearance_json TEXT NOT NULL
     DEFAULT '{"bodyModel":"masculine","skinToneKey":"warm","hairStyleKey":"short","hairColorKey":"midnight","outfitKey":"astral"}';
   `,
+  // v8 — sinal de movimento (pedômetro) da atividade: informativo, nunca afeta recompensa.
+  `
+  ALTER TABLE activities ADD COLUMN movement_steps INTEGER;
+  ALTER TABLE activities ADD COLUMN movement_signal TEXT;
+  `,
+  // v9 — telemetria LOCAL opt-in (DEC-14): eventos nunca saem do aparelho.
+  `
+  CREATE TABLE IF NOT EXISTS analytics_events (
+    id TEXT PRIMARY KEY NOT NULL,
+    event TEXT NOT NULL,
+    properties_json TEXT,
+    occurred_at TEXT NOT NULL,
+    day_key TEXT NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_analytics_events_day ON analytics_events (day_key, event);
+  `,
+  // v10 — Build 5: evolução em 4 estágios. O inteiro evolution_stage passa a
+  // significar 0=BASE, 1=EV1, 2=EV2, 3=PERFEITA (legado 1 vira EV1 sem migrar
+  // dados). Histórico único por transição + instante da última evolução.
+  `
+  ALTER TABLE user_creature ADD COLUMN evolved_at TEXT;
+
+  CREATE TABLE IF NOT EXISTS adari_evolution_history (
+    id TEXT PRIMARY KEY NOT NULL,
+    user_adari_id TEXT NOT NULL,
+    from_stage INTEGER NOT NULL,
+    to_stage INTEGER NOT NULL,
+    unlocked_at TEXT NOT NULL,
+    triggering_reason TEXT NOT NULL,
+    calculation_version INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL,
+    sync_status TEXT NOT NULL DEFAULT 'local_only',
+    UNIQUE (user_adari_id, from_stage, to_stage)
+  );
+  `,
+  // v11 — Build 6: atributos evoluem por PONTOS DE TREINO. `training_total` é o
+  // acumulado por atributo; valor e progresso são DERIVADOS dele (+ nível e
+  // estágio), então recalcular é idempotente e o excedente nunca se perde.
+  // O histórico de level-up existe para a celebração e é único por nível.
+  `
+  CREATE TABLE IF NOT EXISTS adari_attribute_state (
+    id TEXT PRIMARY KEY NOT NULL,
+    user_adari_id TEXT NOT NULL,
+    attribute TEXT NOT NULL,
+    training_total INTEGER NOT NULL DEFAULT 0,
+    updated_at TEXT NOT NULL,
+    UNIQUE (user_adari_id, attribute)
+  );
+  CREATE INDEX IF NOT EXISTS idx_adari_attribute_state_adari
+    ON adari_attribute_state (user_adari_id);
+
+  CREATE TABLE IF NOT EXISTS adari_level_up_reward (
+    id TEXT PRIMARY KEY NOT NULL,
+    user_adari_id TEXT NOT NULL,
+    from_level INTEGER NOT NULL,
+    to_level INTEGER NOT NULL,
+    attribute_gains_json TEXT NOT NULL,
+    operation_id TEXT NOT NULL,
+    calculation_version INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL,
+    UNIQUE (user_adari_id, to_level)
+  );
+  CREATE INDEX IF NOT EXISTS idx_adari_level_up_reward_adari
+    ON adari_level_up_reward (user_adari_id, to_level);
+  `,
 ];
 
 export async function runMigrations(db: SqlDatabase): Promise<void> {

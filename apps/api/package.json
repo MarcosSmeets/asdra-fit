@@ -32,6 +32,7 @@
     "@nestjs/throttler": "^6.4.0",
     "@node-rs/argon2": "^2.0.2",
     "@prisma/client": "^5.22.0",
+    "expo-server-sdk": "^5.0.0",
     "helmet": "^8.0.0",
     "luxon": "^3.5.0",
     "nestjs-pino": "^4.2.0",

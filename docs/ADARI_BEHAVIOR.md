@@ -1,3 +1,8 @@
+> **Ajuste pós-Build 5:** a pose de repouso (`idle`) é **estática** — o Adari só
+> anima nas ações e nos estados contínuos (descanso, sono, pronto para batalha,
+> evolução). O descanso é um **toggle**: o Adari dorme até você tocar em
+> "Acordar". `breathing` segue disponível como idle animado, mas não é o padrão.
+
 # Comportamento dos Adaris
 
 Perfis são dados centralizados em `ADARI_BEHAVIOR_PROFILES`; nenhuma regra compara nomes visíveis.

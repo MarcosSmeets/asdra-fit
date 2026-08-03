@@ -1,13 +1,16 @@
 import { CALCULATION_VERSION } from '@ad-sidera/config';
 import {
-  ACTIVITY_AFFINITY,
+  calculateActivityTraining,
+  type ActivityAttributeAffinity,
+} from './attributeProgression';
+import {
   DAILY_REWARD_MULTIPLIERS,
   DURATION,
   INTENSITY_XP,
   VIGOR,
 } from './constants';
 import { ACTIVITY_TYPES, INTENSITIES, type ActivityType, type Intensity } from './enums';
-import type { AttributeChanges, AttributeKey } from './types';
+import type { AttributeChanges } from './types';
 
 /**
  * Recompensa de uma atividade (economia v2). A recompensa base depende do tipo,
@@ -27,8 +30,22 @@ export interface ActivityReward {
   finalXp: number;
   baseEnergy: number;
   finalEnergy: number;
+  /**
+   * PONTOS DE TREINO por atributo (Build 6) — não são mais pontos inteiros de
+   * atributo. O atributo sobe 1 a cada `ATTRIBUTE_TRAINING.PROGRESS_REQUIRED`
+   * pontos acumulados; ver `attributeProgression.ts`.
+   */
+  baseTrainingChanges: AttributeChanges;
+  finalTrainingChanges: AttributeChanges;
+  /** @deprecated Build 6: alias de `baseTrainingChanges` (mesmos valores). */
   baseAttributeChanges: AttributeChanges;
+  /** @deprecated Build 6: alias de `finalTrainingChanges` (mesmos valores). */
   finalAttributeChanges: AttributeChanges;
+  /** Pontos totais de treino antes/depois do multiplicador diário. */
+  baseTrainingPoints: number;
+  finalTrainingPoints: number;
+  /** Papéis de atributo desta atividade (principal/secundário/complementar). */
+  affinity: ActivityAttributeAffinity;
   calculationVersion: number;
   reason?: 'below_min_duration' | 'reduced_second' | 'no_reward_position';
 }
@@ -75,28 +92,6 @@ export function durationFactor(durationMinutes: number): number {
   return 1 + (clamped / DURATION.CAP_MINUTES) * DURATION.MAX_BONUS;
 }
 
-function baseAttributeDeltas(affinity: AttributeKey, intensity: Intensity): AttributeChanges {
-  const primary = intensity === 'intensa' ? 2 : 1;
-  const changes: AttributeChanges = {};
-  changes[affinity] = (changes[affinity] ?? 0) + primary;
-  changes.discipline = (changes.discipline ?? 0) + 1;
-  if (intensity === 'intensa') {
-    changes.spirit = (changes.spirit ?? 0) + 1;
-  }
-  return changes;
-}
-
-function scaleAttributes(base: AttributeChanges, multiplier: number): AttributeChanges {
-  const out: AttributeChanges = {};
-  for (const key of Object.keys(base) as AttributeKey[]) {
-    const scaled = Math.round((base[key] ?? 0) * multiplier);
-    if (scaled > 0) {
-      out[key] = scaled;
-    }
-  }
-  return out;
-}
-
 /**
  * Calcula a recompensa de UMA atividade dada a sua posição entre as elegíveis do dia.
  * `rewardEligiblePosition` deve ser 1-based (1 = primeira elegível); use 0 para forçar
@@ -119,11 +114,15 @@ export function calculateActivityReward(
   // O Vigor é primariamente um recurso de descanso (recupera com o tempo), então a
   // atividade concede apenas um empurrão, sem virar a principal fonte de Vigor.
   const baseEnergy = VIGOR.ACTIVITY_BONUS;
-  const baseAttributeChanges = baseAttributeDeltas(ACTIVITY_AFFINITY[activityType], intensity);
+  // Atributos passaram a evoluir por PONTOS DE TREINO (Build 6): a afinidade da
+  // atividade reparte os pontos entre principal/secundário/complementar.
+  const training = calculateActivityTraining(
+    { activityType, perceivedIntensity: intensity, durationMinutes: input.durationMinutes },
+    position,
+  );
 
   const finalXp = Math.round(baseXp * multiplier);
   const finalEnergy = position === 1 ? VIGOR.ACTIVITY_BONUS : 0;
-  const finalAttributeChanges = scaleAttributes(baseAttributeChanges, multiplier);
 
   const eligible = position >= 1;
   let reason: ActivityReward['reason'];
@@ -144,8 +143,13 @@ export function calculateActivityReward(
     finalXp,
     baseEnergy,
     finalEnergy,
-    baseAttributeChanges,
-    finalAttributeChanges,
+    baseTrainingChanges: training.baseTrainingChanges,
+    finalTrainingChanges: training.finalTrainingChanges,
+    baseAttributeChanges: training.baseTrainingChanges,
+    finalAttributeChanges: training.finalTrainingChanges,
+    baseTrainingPoints: training.basePoints,
+    finalTrainingPoints: training.finalPoints,
+    affinity: training.affinity,
     calculationVersion: CALCULATION_VERSION,
     reason,
   };

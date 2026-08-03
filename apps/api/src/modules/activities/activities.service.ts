@@ -65,12 +65,17 @@ export class ActivitiesService {
         location: input.location ?? null,
         moodBefore: input.moodBefore ?? null,
         moodAfter: input.moodAfter ?? null,
+        movementSteps: input.movementSteps ?? null,
+        movementSignal: input.movementSignal ?? null,
         // hasLocalPhoto/remotePhotoKey só via app (fotos nunca chegam ao backend).
         // A validade para a meta é recalculada autoritativamente pelo servidor.
         isScored: true,
       },
     });
     await this.progression.recomputeWeek(userId, activity.occurredAt);
+    // XP e atributos são DERIVADOS das atividades aceitas: sem rematerializar
+    // aqui, criar/editar/excluir pelo REST deixaria os stats fora dos fatos.
+    await this.progression.recomputeCreatureProgress(userId);
     return activity;
   }
 
@@ -87,9 +92,12 @@ export class ActivitiesService {
         location: input.location,
         moodBefore: input.moodBefore,
         moodAfter: input.moodAfter,
+        movementSteps: input.movementSteps,
+        movementSignal: input.movementSignal,
       },
     });
     await this.progression.recomputeWeeksFor(userId, [current.occurredAt, updated.occurredAt]);
+    await this.progression.recomputeCreatureProgress(userId);
     return updated;
   }
 
@@ -97,5 +105,6 @@ export class ActivitiesService {
     const current = await this.get(userId, id);
     await this.prisma.activity.update({ where: { id }, data: { deletedAt: new Date() } });
     await this.progression.recomputeWeek(userId, current.occurredAt);
+    await this.progression.recomputeCreatureProgress(userId);
   }
 }

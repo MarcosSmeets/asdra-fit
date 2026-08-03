@@ -181,6 +181,15 @@ export default function ActivityDetailScreen(): React.ReactElement {
           <DetailRow label="Humor depois" value={MOOD_LABELS[activity.moodAfter]} />
         ) : null}
         {activity.location ? <DetailRow label="Local" value={activity.location} /> : null}
+        {/* Sinal informativo do aparelho; estados sem confirmação usam texto neutro. */}
+        {activity.movementSignal === 'confirmed' ? (
+          <DetailRow
+            label="Movimento"
+            value={`Confirmado pelo aparelho${activity.movementSteps ? ` · ${activity.movementSteps} passos` : ''}`}
+          />
+        ) : activity.movementSignal === 'unconfirmed' || activity.movementSignal === 'unavailable' ? (
+          <DetailRow label="Movimento" value="Sem dados do aparelho para este registro" />
+        ) : null}
         <DetailRow label="Sincronização" value={SYNC_LABELS[activity.syncStatus]} />
       </Card>
 

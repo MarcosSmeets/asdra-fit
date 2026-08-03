@@ -36,6 +36,7 @@ export const APP_STATE_KEYS = {
   DEVICE_ID: 'device_id',
   LAST_SYNC_AT: 'last_sync_at',
   INTRO_SEEN: 'intro_seen',
+  GETTING_STARTED_V1_COMPLETE: 'getting_started_v1_complete',
   ONBOARDING_DRAFT: 'onboarding_draft_v2',
   ONBOARDING_COMPLETED_STEPS: 'onboarding_completed_steps_v2',
   LOCAL_PROFILE_BOUND: 'local_profile_bound',
@@ -43,4 +44,5 @@ export const APP_STATE_KEYS = {
   CONVERSION_STATE: 'local_profile_conversion_state',
   LAST_SYNC_ATTEMPT_AT: 'last_sync_attempt_at',
   LAST_SYNC_ERROR: 'last_sync_error',
+  ANALYTICS_ENABLED: 'analytics_enabled',
 } as const;

@@ -2,30 +2,30 @@
 
 ## Auditoria
 
-A Build 4 preserva o monorepo PNPM/Turbo, Expo Router, React Native 0.81, Expo SDK 54, SQLite, Zustand, `Animated` e `react-native-svg`. O backend permanece NestJS/Prisma. Nenhuma rota, tabela ou protocolo de sincronizaÃ§Ã£o foi substituÃ­do.
+A Build 4 preserva o monorepo PNPM/Turbo, Expo Router, React Native 0.81, Expo SDK 54, SQLite, Zustand, `Animated` e `react-native-svg`. O backend permanece NestJS/Prisma. Nenhuma rota, tabela ou protocolo de sincronização foi substituído.
 
-O baseline anterior Ã  correÃ§Ã£o passava em lint, typecheck, 201 testes e export Android, mas nÃ£o exercitava grafos malformados nem verificava se a aparÃªncia do avatar influenciava a renderizaÃ§Ã£o.
+O baseline anterior à correção passava em lint, typecheck, 201 testes e export Android, mas não exercitava grafos malformados nem verificava se a aparência do avatar influenciava a renderização.
 
 ## Bugs reproduzidos e causas
 
 - `CampaignMap`: `nodes[travelerIndex]!` podia ser `undefined`; `findIndex` podia produzir `-1` e esse valor era transformado em destino de `Animated.ValueXY`. O operador `!` ocultava o risco apenas do TypeScript.
 - Avatar: o objeto persistido era modular, mas `PlayerAvatar` recortava um preset fechado de um atlas 4x2 usando somente modelo corporal e tom de pele. Cabelo, cor e roupa eram ignorados.
-- Meu Adari: os estados existiam, mas conversa reutilizava `curious`, repouso nÃ£o respirava em loop e os planos do cenÃ¡rio eram uma imagem Ãºnica.
-- Batalha: o motor calculava `rawDamage` e `blockedDamage`, porÃ©m a cena descartava esses campos. A Guarda estava correta mecanicamente, mas pouco legÃ­vel.
+- Meu Adari: os estados existiam, mas conversa reutilizava `curious`, repouso não respirava em loop e os planos do cenário eram uma imagem única.
+- Batalha: o motor calculava `rawDamage` e `blockedDamage`, porém a cena descartava esses campos. A Guarda estava correta mecanicamente, mas pouco legível.
 
 ## Plano executado
 
-1. Baseline e reproduÃ§Ã£o.
-2. Guards e validaÃ§Ã£o do grafo.
-3. ComposiÃ§Ã£o modular do avatar.
+1. Baseline e reprodução.
+2. Guards e validação do grafo.
+3. Composição modular do avatar.
 4. Estados e efeitos da home.
 5. Planos 2.5D leves.
 6. Feedback de batalha e Guarda.
-7. ValidaÃ§Ã£o completa e documentaÃ§Ã£o.
+7. Validação completa e documentação.
 
-## DecisÃ£o tÃ©cnica
+## Decisão técnica
 
-Skia e Reanimated nÃ£o foram adicionados. A stack instalada jÃ¡ fornece `Animated` com driver nativo e SVG, suficientes para transformaÃ§Ãµes, luz e camadas desta entrega. A decisÃ£o evita aumentar o binÃ¡rio e o risco nativo para uma correÃ§Ã£o incremental.
+Skia e Reanimated não foram adicionados. A stack instalada já fornece `Animated` com driver nativo e SVG, suficientes para transformações, luz e camadas desta entrega. A decisão evita aumentar o binário e o risco nativo para uma correção incremental.
 
 ## Validação final — 22/07/2026
 
@@ -41,4 +41,4 @@ Skia e Reanimated nÃ£o foram adicionados. A stack instalada jÃ¡ fornece `Ani
 
 ## Limites
 
-Os retratos dos Adaris e inimigos ainda partem de um frame raster por personagem. AntecipacÃ£o, respiraÃ§Ã£o, impacto e retorno sÃ£o animaÃ§Ãµes transformacionais; sprite sheets quadro a quadro continuam como evoluÃ§Ã£o artÃ­stica futura.
+Os retratos dos Adaris e inimigos ainda partem de um frame raster por personagem. Antecipacão, respiração, impacto e retorno são animações transformacionais; sprite sheets quadro a quadro continuam como evolução artística futura.

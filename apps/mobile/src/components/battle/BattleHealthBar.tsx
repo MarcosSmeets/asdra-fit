@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, StyleSheet, View } from 'react-native';
 import { useReducedMotion } from '../../theme/ThemeProvider';
-import { darkColors } from '../../theme/tokens';
+import { pixelColors, pixelUnit } from '../../theme/tokens';
 import { normalizedBattleHealth } from '../../features/battle/healthAnimation';
 import { Text } from '../Text';
 
@@ -13,7 +13,7 @@ export interface BattleHealthBarProps {
   accessibilityLabel?: string;
 }
 
-/** Barra animada somente quando a Vida muda; nÃ£o gera atualizaÃ§Ãµes React por frame. */
+/** Barra animada somente quando a Vida muda; não gera atualizações React por frame. */
 export function BattleHealthBar({
   current,
   max,
@@ -38,13 +38,13 @@ export function BattleHealthBar({
   }, [animated, progress, reduced]);
 
   const width = animated.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] });
-  const fill = color === 'error' ? darkColors.error : darkColors.success;
+  const fill = color === 'error' ? pixelColors.error : pixelColors.success;
 
   return (
     <View style={styles.root} accessible accessibilityRole="progressbar" accessibilityLabel={accessibilityLabel ?? `${label}: ${shown} de ${total}`}>
       <View style={styles.labels}>
-        <Text variant="label" style={{ color: darkColors.text }}>{label}</Text>
-        <Text variant="label" style={{ color: darkColors.textMuted }}>{shown}/{total}</Text>
+        <Text variant="hud">{label}</Text>
+        <Text variant="caption" color="textMuted">{shown}/{total}</Text>
       </View>
       <View style={styles.track}>
         <Animated.View style={[styles.fill, { backgroundColor: fill, width }]} />
@@ -57,7 +57,7 @@ export function BattleHealthBar({
 const styles = StyleSheet.create({
   root: { gap: 4 },
   labels: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' },
-  track: { height: 10, overflow: 'hidden', borderRadius: 999, backgroundColor: darkColors.surfaceElevated, borderWidth: 1, borderColor: darkColors.border },
-  fill: { position: 'absolute', left: 0, top: 0, bottom: 0, borderRadius: 999 },
-  highlight: { position: 'absolute', left: 2, right: 2, top: 1, height: 2, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.28)' },
+  track: { height: 12, overflow: 'hidden', backgroundColor: pixelColors.track, borderWidth: pixelUnit / 2, borderColor: pixelColors.border },
+  fill: { position: 'absolute', left: 0, top: 0, bottom: 0 },
+  highlight: { position: 'absolute', left: 0, right: 0, top: 0, height: pixelUnit / 2, backgroundColor: 'rgba(245,245,255,0.35)' },
 });

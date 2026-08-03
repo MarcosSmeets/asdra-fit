@@ -9,6 +9,7 @@ import {
   type NativeSyntheticEvent,
 } from 'react-native';
 import { AdariPortrait, Button, CelestialDivider, Screen, StarIcon, Text } from '@/components';
+import { ONLINE_FEATURES_ENABLED } from '@/config/features';
 import { BRAND } from '@/constants/brand';
 import { useTheme } from '@/theme/ThemeProvider';
 
@@ -34,7 +35,9 @@ const SLIDES: readonly Slide[] = [
   {
     key: 'estrelas',
     title: 'Treine, avance e alcance as estrelas.',
-    subtitle: 'Enfrente a campanha, desafie adversários e entre em uma liga com amigos.',
+    subtitle: ONLINE_FEATURES_ENABLED
+      ? 'Enfrente a campanha, desafie adversários e entre em uma liga com amigos.'
+      : 'Enfrente a campanha e desafie adversários para avançar entre as estrelas.',
   },
 ];
 
@@ -46,7 +49,9 @@ const TRIO = [
 ] as const;
 
 const FLOW_STEPS = ['Atividade', 'XP', 'Atributos', 'Evolução'] as const;
-const FEATURES = ['Campanha', 'Adversário', 'Liga com amigos'] as const;
+const FEATURES = ONLINE_FEATURES_ENABLED
+  ? (['Campanha', 'Adversário', 'Liga com amigos'] as const)
+  : (['Campanha', 'Adversário', 'Evolução'] as const);
 
 /** Etiqueta estática (pílula) usada nas sequências visuais da introdução. */
 function Tag({ label }: { label: string }): React.ReactElement {
@@ -114,7 +119,7 @@ function FeaturesVisual(): React.ReactElement {
   const theme = useTheme();
   return (
     <View style={{ alignItems: 'center', gap: theme.spacing.lg }}>
-      <AdariPortrait creatureKey="solivar" size={120} mood="ready" evolved />
+      <AdariPortrait creatureKey="solivar" size={120} mood="ready" />
       <View
         style={{
           flexDirection: 'row',

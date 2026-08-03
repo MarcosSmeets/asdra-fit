@@ -1,6 +1,5 @@
 import React from 'react';
 import { View } from 'react-native';
-import { darkColors } from '../../theme/tokens';
 import { ProgressBar } from '../ProgressBar';
 import { Text } from '../Text';
 
@@ -30,10 +29,10 @@ export function BattleEnergyBar({
   return (
     <View style={{ gap: 4 }}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-        <Text variant="label" style={{ color: darkColors.text }}>
+        <Text variant="hud">
           {label}
         </Text>
-        <Text variant="label" style={{ color: darkColors.textMuted }}>
+        <Text variant="caption" color="textMuted">
           {shown}/{total}
         </Text>
       </View>

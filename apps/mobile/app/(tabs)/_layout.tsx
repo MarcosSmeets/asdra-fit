@@ -1,7 +1,9 @@
-import { Tabs } from 'expo-router';
+import { Redirect, Tabs } from 'expo-router';
 import React from 'react';
 import { TAB_ICONS, type TabIconName } from '@/components';
+import { ONLINE_FEATURES_ENABLED } from '@/config/features';
 import { useTheme } from '@/theme/ThemeProvider';
+import { useSessionStore } from '@/stores/sessionStore';
 
 interface TabConfig {
   name: TabIconName;
@@ -23,6 +25,10 @@ const TAB_CONFIG: readonly TabConfig[] = [
  */
 export default function TabsLayout(): React.ReactElement {
   const theme = useTheme();
+  const { ready, progress, tutorialCompleted } = useSessionStore();
+
+  if (ready && !progress.hasCompletedOnboarding) return <Redirect href="/onboarding" />;
+  if (ready && !tutorialCompleted) return <Redirect href="/getting-started" />;
 
   return (
     <Tabs
@@ -48,6 +54,7 @@ export default function TabsLayout(): React.ReactElement {
             name={name}
             options={{
               title,
+              href: name === 'league' && !ONLINE_FEATURES_ENABLED ? null : undefined,
               tabBarAccessibilityLabel: title,
               tabBarIcon: ({ color, focused }) => (
                 <Icon color={color} focused={focused} size={24} />

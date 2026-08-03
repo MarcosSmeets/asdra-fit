@@ -1,0 +1,29 @@
+# Fluxo E2E offline: Jornada → primeiro combate → Linha Evolutiva.
+# Pré-requisito: onboarding concluído. Não exige API, conta ou Liga.
+appId: app.adsidera.mobile
+---
+- launchApp
+- tapOn: 'Jornada'
+- assertVisible: 'Mapa da Jornada'
+- tapOn: 'Espírito Errante'
+- tapOn: 'Preparar batalha'
+- assertVisible: 'Iniciar batalha'
+- tapOn: 'Iniciar batalha'
+- repeat:
+    times: 12
+    commands:
+      - tapOn:
+          text: 'Atacar'
+          optional: true
+      - tapOn:
+          text: 'Continuar'
+          optional: true
+- tapOn:
+    text: 'Voltar à jornada'
+    optional: true
+- tapOn: 'Meu Adari'
+- tapOn: 'Status'
+- tapOn: 'Linha Evolutiva'
+- assertVisible: 'Linha Evolutiva'
+- assertVisible: 'Brontar'
+- assertNotVisible: 'Liga'

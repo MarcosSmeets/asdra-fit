@@ -23,7 +23,10 @@ export class CreaturesService {
   }
 
   async getMine(userId: string) {
-    const creature = await this.prisma.userCreature.findUnique({ where: { userId } });
+    const creature = await this.prisma.userCreature.findUnique({
+      where: { userId },
+      include: { evolutionHistory: { orderBy: { toStage: 'asc' } } },
+    });
     if (!creature) {
       throw new NotFoundException('Nenhuma criatura selecionada.');
     }

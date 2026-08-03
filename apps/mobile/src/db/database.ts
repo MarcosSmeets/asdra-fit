@@ -33,8 +33,8 @@ export async function getDatabase(): Promise<SqlDatabase> {
 }
 
 /**
- * Troca o namespace local nas fronteiras de autenticaÃ§Ã£o. Cada conta possui
- * seu prÃ³prio arquivo SQLite; o perfil local continua no arquivo legado.
+ * Troca o namespace local nas fronteiras de autenticação. Cada conta possui
+ * seu próprio arquivo SQLite; o perfil local continua no arquivo legado.
  */
 export async function setDatabaseScope(nextScope: DatabaseScope): Promise<void> {
   if (sameDatabaseScope(scope, nextScope)) return;
@@ -46,6 +46,17 @@ export async function setDatabaseScope(nextScope: DatabaseScope): Promise<void> 
 
 export function getDatabaseScope(): DatabaseScope {
   return scope;
+}
+
+/**
+ * Fecha o banco atual sem trocar o escopo. O próximo getDatabase() reabre o
+ * arquivo (ou o recria do zero, se ele tiver sido apagado do disco).
+ */
+export async function closeDatabase(): Promise<void> {
+  if (opening) await opening.catch(() => undefined);
+  if (instance && !injectedForTests) await instance.closeAsync?.();
+  instance = null;
+  opening = null;
 }
 
 /** Apenas para testes: injeta uma implementação de SqlDatabase. */

@@ -65,7 +65,7 @@ Baseline antes das correções:
 1. A variação atual é ±10% e existe crítico aleatório de 12% com multiplicador 1,5.
 2. Cada tentativa usa `Date.now()` como novo seed. Reiniciar muda tanto dano quanto escalonamento do inimigo.
 3. O golpe de chefe é telegrafado, mas a função sintética declarada para ele não é usada.
-4. A guarda reduz 50%, abaixo dos 65% especificados, e não registra resposta especial ao telegraph.
+4. A guarda reduz 50%, abaixo dos 65% especificados, e não registra resposta especial ao telegraph. _(Nota histórica: o valor canônico foi consolidado depois em **70%** — `BATTLE.DEFEND_MITIGATION = 0.3`.)_
 5. A UI informa que o chefe está carregando, mas não mostra dano estimado, contagem de turnos ou dica contextual no resultado.
 6. Não havia simulação estatística cobrindo centenas de seeds por dificuldade e estratégia.
 

@@ -13,7 +13,7 @@ export interface AtlasFrameProps {
   onErrorFallback?: React.ReactNode;
 }
 
-/** Recorta uma cÃ©lula sem criar novos bitmaps durante a animaÃ§Ã£o. */
+/** Recorta uma célula sem criar novos bitmaps durante a animação. */
 export function AtlasFrame({ source, columns, rows, column, row, size, atlasAspectRatio,
   accessibilityLabel, onErrorFallback }: AtlasFrameProps): React.ReactElement {
   const [failed, setFailed] = useState(false);

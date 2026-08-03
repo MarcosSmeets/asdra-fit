@@ -1,5 +1,6 @@
 import type {
   ActivityRecord,
+  AdariEvolutionHistoryRecord,
   AdariInteractionRecord,
   BattleSessionRecord,
   CreatureState,
@@ -19,6 +20,8 @@ export function activitySyncPayload(activity: ActivityRecord): Record<string, un
     moodBefore: activity.moodBefore ?? undefined,
     moodAfter: activity.moodAfter ?? undefined,
     hasLocalPhoto: activity.hasLocalPhoto,
+    movementSteps: activity.movementSteps ?? undefined,
+    movementSignal: activity.movementSignal ?? undefined,
   };
 }
 
@@ -29,7 +32,10 @@ export function creatureSyncPayload(creature: CreatureState): Record<string, unk
     nickname: creature.nickname,
     level: creature.level,
     xp: creature.xp,
+    // O servidor NUNCA aplica o estágio a partir deste payload (anti-fraude);
+    // o estágio só muda pela operação validada `adari_evolution`.
     evolutionStage: creature.evolutionStage,
+    evolvedAt: creature.evolvedAt ?? undefined,
     strength: a.strength,
     endurance: a.endurance,
     agility: a.agility,
@@ -49,6 +55,21 @@ export function creatureSyncPayload(creature: CreatureState): Record<string, unk
     lastInteractionAt: creature.lastInteractionAt,
     equippedAbilities: creature.equippedAbilities,
     defeatedMilestones: creature.defeatedMilestones,
+  };
+}
+
+/** Payload da operação idempotente de evolução (validada no servidor). */
+export function adariEvolutionSyncPayload(
+  history: AdariEvolutionHistoryRecord,
+): Record<string, unknown> {
+  return {
+    clientGeneratedId: history.id,
+    userAdariId: history.userAdariId,
+    fromStage: history.fromStage,
+    toStage: history.toStage,
+    unlockedAt: history.unlockedAt,
+    triggeringReason: history.triggeringReason,
+    calculationVersion: history.calculationVersion,
   };
 }
 

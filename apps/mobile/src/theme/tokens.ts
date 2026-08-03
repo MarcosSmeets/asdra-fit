@@ -1,8 +1,44 @@
 /**
- * Design tokens do Ad Sidera (v2). Identidade: jornada estelar — navy meia-noite,
- * creme/marfim, ouro estelar e verde-bruma (teal). O MODO CLARO é a experiência
- * principal; o escuro é preservado com a mesma identidade. Sem gradientes/neon.
+ * Design tokens do Ad Sidera (v3 — Build 5). Identidade oficial: RPG futurista
+ * em pixel art 32-bit — cosmos profundo, tecnologia astral, energia estelar.
+ * Tema ESCURO ÚNICO (decisão de produto do Build 5). Nenhum hexadecimal fora
+ * deste arquivo. Sem gradientes suaves nem neon excessivo (spec §7).
  */
+
+/** Paleta oficial pixel art (spec §7). Fonte única de verdade cromática. */
+export const pixelPalette = {
+  cosmic: {
+    deepest: '#050817',
+    deep: '#091128',
+    midnight: '#101A3B',
+    indigo: '#252460',
+  },
+  energy: {
+    violet: '#7753E6',
+    purple: '#9A63FF',
+    cyan: '#3FD8E5',
+    teal: '#3DABA8',
+    magenta: '#D05BDD',
+  },
+  stellar: {
+    gold: '#D5A84F',
+    lightGold: '#F4CC77',
+    white: '#F5F5FF',
+  },
+  neutral: {
+    slate: '#75809D',
+    panel: '#0D1733',
+    border: '#273762',
+    /** Sombra dura deslocada dos painéis pixel. */
+    shadow: '#03040D',
+  },
+  /** Tons de feedback derivados (bordas/realces de estados). */
+  feedback: {
+    errorBright: '#F0938E',
+    inkOnLight: '#17314A',
+    mist: '#DCE8F2',
+  },
+} as const;
 
 export interface ThemeColors {
   background: string;
@@ -27,61 +63,28 @@ export interface ThemeColors {
   track: string;
 }
 
-// Paleta base da marca.
-const GOLD = '#C9A45C';
-const GOLD_DARK = '#B08A3E';
-const NAVY = '#10233F';
-const NAVY_DEEP = '#08182C';
-const CREAM = '#F7F1E7';
-const IVORY = '#FFFDF8';
-const SLATE = '#667085';
-
-/** Modo claro — experiência principal (creme + navy + ouro + teal). */
-export const lightColors: ThemeColors = {
-  background: CREAM,
-  backgroundSecondary: '#EFE7D6',
-  surface: IVORY,
-  surfaceAlt: '#F1EADC',
-  surfaceElevated: '#FFFFFF',
-  primary: NAVY,
-  primaryMuted: '#DBE1EC',
-  onPrimary: IVORY,
-  secondary: GOLD_DARK,
-  onSecondary: '#2A1E06',
-  brandGold: GOLD_DARK,
-  brandTeal: '#2F6E6D',
-  success: '#3F8468',
-  warning: '#9A6B1A',
-  error: '#B54747',
-  text: NAVY,
-  textMuted: SLATE,
-  border: '#E4DAC8',
-  overlay: 'rgba(16, 35, 63, 0.42)',
-  track: '#E7DECB',
-};
-
-/** Modo escuro — mesma identidade em navy profundo. */
-export const darkColors: ThemeColors = {
-  background: NAVY_DEEP,
-  backgroundSecondary: '#0C2038',
-  surface: NAVY,
-  surfaceAlt: '#152B49',
-  surfaceElevated: '#193357',
-  primary: GOLD,
-  primaryMuted: '#2C3E5C',
-  onPrimary: NAVY_DEEP,
-  secondary: '#5BAAA8',
-  onSecondary: '#06201F',
-  brandGold: GOLD,
-  brandTeal: '#5BAAA8',
+/** Mapeamento semântico único (escuro cósmico). */
+export const pixelColors: ThemeColors = {
+  background: pixelPalette.cosmic.deepest,
+  backgroundSecondary: pixelPalette.cosmic.deep,
+  surface: pixelPalette.neutral.panel,
+  surfaceAlt: pixelPalette.cosmic.midnight,
+  surfaceElevated: '#14224A',
+  primary: pixelPalette.stellar.gold,
+  primaryMuted: '#3A3F6E',
+  onPrimary: pixelPalette.cosmic.deepest,
+  secondary: pixelPalette.energy.teal,
+  onSecondary: pixelPalette.cosmic.deepest,
+  brandGold: pixelPalette.stellar.gold,
+  brandTeal: pixelPalette.energy.teal,
   success: '#4FB088',
-  warning: '#E0A23B',
-  error: '#DE7B76',
-  text: CREAM,
-  textMuted: '#9FB0C6',
-  border: '#243A57',
-  overlay: 'rgba(4, 10, 20, 0.6)',
-  track: '#1E3252',
+  warning: pixelPalette.stellar.lightGold,
+  error: '#E0655F',
+  text: pixelPalette.stellar.white,
+  textMuted: pixelPalette.neutral.slate,
+  border: pixelPalette.neutral.border,
+  overlay: 'rgba(5, 8, 23, 0.72)',
+  track: '#1A2650',
 };
 
 export const spacing = {
@@ -94,13 +97,17 @@ export const spacing = {
   xxxl: 48,
 } as const;
 
+/** Cantos "recortados" (pixel art): raios pequenos e duros, nunca pílulas suaves. */
 export const radius = {
-  sm: 8,
-  md: 12,
-  lg: 18,
-  xl: 24,
+  sm: 2,
+  md: 3,
+  lg: 4,
+  xl: 6,
   pill: 999,
 } as const;
+
+/** Unidade de pixel lógico do design system (bordas, recortes, sombras duras). */
+export const pixelUnit = 2;
 
 /** Tamanhos com mínimos legíveis (corpo 16, seção 20+, tela 28+). */
 export const fontSize = {
@@ -120,34 +127,42 @@ export const fontWeight = {
   bold: '700',
 } as const;
 
-/** Famílias de fonte (carregadas via @expo-google-fonts). Serif p/ títulos, sans p/ corpo. */
+/**
+ * Famílias (via @expo-google-fonts). Pixelada (Pixelify Sans) SOMENTE para
+ * nomes, títulos curtos, estágios e HUD; sans (Inter) para corpo, formulários
+ * e textos longos (spec §9). Nunca pixelada em parágrafos ou inputs.
+ */
 export const fontFamily = {
-  serif: 'Cormorant_600SemiBold',
-  serifBold: 'Cormorant_700Bold',
+  pixel: 'PixelifySans_600SemiBold',
+  pixelBold: 'PixelifySans_700Bold',
   sans: 'Inter_400Regular',
   sansMedium: 'Inter_500Medium',
   sansSemibold: 'Inter_600SemiBold',
   sansBold: 'Inter_700Bold',
 } as const;
 
-export type ColorScheme = 'light' | 'dark';
+export type ColorScheme = 'dark';
 
 export interface Theme {
   scheme: ColorScheme;
   colors: ThemeColors;
+  palette: typeof pixelPalette;
   spacing: typeof spacing;
   radius: typeof radius;
+  pixelUnit: number;
   fontSize: typeof fontSize;
   fontWeight: typeof fontWeight;
   fontFamily: typeof fontFamily;
 }
 
-export function buildTheme(scheme: ColorScheme): Theme {
+export function buildTheme(): Theme {
   return {
-    scheme,
-    colors: scheme === 'dark' ? darkColors : lightColors,
+    scheme: 'dark',
+    colors: pixelColors,
+    palette: pixelPalette,
     spacing,
     radius,
+    pixelUnit,
     fontSize,
     fontWeight,
     fontFamily,

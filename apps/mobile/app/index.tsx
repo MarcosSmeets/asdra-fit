@@ -5,6 +5,6 @@ import { entryRouteForProgress } from '../src/domain/userProgress';
 
 /** Roteamento inicial baseado no estado da sessão (local-first). */
 export default function Index(): React.ReactElement {
-  const { ready, mode, progress } = useSessionStore();
-  return <Redirect href={entryRouteForProgress(ready, mode, progress)} />;
+  const { ready, mode, progress, tutorialCompleted } = useSessionStore();
+  return <Redirect href={entryRouteForProgress(ready, mode, progress, tutorialCompleted)} />;
 }

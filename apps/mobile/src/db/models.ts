@@ -4,6 +4,7 @@ import type {
   AttributeSet,
   Intensity,
   Mood,
+  MovementSignal,
   PlayerAvatarAppearance,
   SyncStatus,
 } from '@ad-sidera/shared';
@@ -14,7 +15,10 @@ export interface CreatureState {
   nickname: string | null;
   level: number;
   xp: number;
+  /** Inteiro persistido 0..3 (BASE, EV 1, EV 2, PERFEITA) — ver stageFromInt. */
   evolutionStage: number;
+  /** Instante ISO da última evolução (null = nunca evoluiu). */
+  evolvedAt: string | null;
   /** `attributes.energy` é o Vigor ATUAL (recurso de descanso). */
   attributes: AttributeSet;
   /** Vigor máximo (teto de descanso). */
@@ -35,6 +39,19 @@ export interface CreatureState {
   defeatedMilestones: string[];
   totalActivities: number;
   updatedAt: string;
+  syncStatus: SyncStatus;
+}
+
+/** Registro de UMA transição de estágio (histórico único por transição). */
+export interface AdariEvolutionHistoryRecord {
+  id: string;
+  userAdariId: string;
+  fromStage: number;
+  toStage: number;
+  unlockedAt: string;
+  triggeringReason: string;
+  calculationVersion: number;
+  createdAt: string;
   syncStatus: SyncStatus;
 }
 
@@ -103,6 +120,9 @@ export interface ActivityRecord {
   moodAfter: Mood | null;
   hasLocalPhoto: boolean;
   localPhotoUri: string | null;
+  /** Passos medidos na janela do treino (null = sem dado; nunca afeta recompensa). */
+  movementSteps: number | null;
+  movementSignal: MovementSignal | null;
   isScored: boolean;
   createdAt: string;
   updatedAt: string;

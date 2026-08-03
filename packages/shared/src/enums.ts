@@ -19,6 +19,22 @@ export type ActivityType = (typeof ACTIVITY_TYPES)[number];
 export const INTENSITIES = ['leve', 'moderada', 'intensa'] as const;
 export type Intensity = (typeof INTENSITIES)[number];
 
+/**
+ * Sinal de movimento medido pelo aparelho na janela do treino. INFORMATIVO:
+ * nunca altera recompensa nem ranking (filosofia de nunca punir).
+ * - confirmed: houve movimento compatível com o treino declarado
+ * - unconfirmed: o sensor não registrou movimento compatível
+ * - unavailable: sem permissão/sensor no momento do registro
+ * - not_applicable: o tipo de atividade não é mensurável por passos
+ */
+export const MOVEMENT_SIGNALS = [
+  'confirmed',
+  'unconfirmed',
+  'unavailable',
+  'not_applicable',
+] as const;
+export type MovementSignal = (typeof MOVEMENT_SIGNALS)[number];
+
 export const MOODS = ['pessimo', 'ruim', 'neutro', 'bom', 'otimo'] as const;
 export type Mood = (typeof MOODS)[number];
 

@@ -31,11 +31,33 @@ jobs:
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test
+      - name: Validar sprites finais dos Adaris
+        run: pnpm pixel-art:adaris:check
+      - name: Exportar bundle Android
+        run: pnpm --filter @ad-sidera/mobile export:android
+      - name: Exportar bundle iOS
+        run: pnpm --filter @ad-sidera/mobile export:ios
       - run: pnpm --filter @ad-sidera/api build
 
   prisma:
     name: Prisma validate & migrations
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: adsidera
+          POSTGRES_PASSWORD: adsidera
+          POSTGRES_DB: adsidera_prisma_check
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U adsidera"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      DATABASE_URL: postgresql://adsidera:adsidera@localhost:5432/adsidera_prisma_check?schema=public
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -49,9 +71,9 @@ jobs:
       - name: Validar schema
         run: pnpm --filter @ad-sidera/api exec prisma validate
       - name: Checar migrations vs schema (drift)
-        env:
-          DATABASE_URL: postgresql://ci:ci@localhost:5432/ci?schema=public
-        run: pnpm --filter @ad-sidera/api exec prisma migrate diff --from-migrations prisma/migrations --to-schema-datamodel prisma/schema.prisma --exit-code || echo "Há diferença entre migrations e schema (revisar)."
+        run: |
+          pnpm --filter @ad-sidera/api exec prisma migrate deploy
+          pnpm --filter @ad-sidera/api exec prisma migrate diff --from-url "$DATABASE_URL" --to-schema-datamodel prisma/schema.prisma --exit-code
 
   api-e2e:
     name: API integration tests (Supertest + Postgres)

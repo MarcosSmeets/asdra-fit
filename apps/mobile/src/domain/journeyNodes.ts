@@ -35,7 +35,7 @@ function hasFinitePosition(node: JourneyNode | undefined): node is JourneyNode {
   return node !== undefined && isFinitePosition(node.position);
 }
 
-/** Nunca entrega um nÃ³ malformado para Animated.ValueXY. */
+/** Nunca entrega um nó malformado para Animated.ValueXY. */
 export function getNodeByIdSafe(nodes: readonly JourneyNode[], id: string): JourneyNode | undefined {
   const node = nodes.find((candidate) => candidate.id === id);
   return hasFinitePosition(node) ? node : undefined;
@@ -45,7 +45,7 @@ export function getNodePositionSafe(nodes: readonly JourneyNode[], id: string): 
   return getNodeByIdSafe(nodes, id)?.position;
 }
 
-/** Resolve o caminho de forma atÃ´mica: um Ãºnico trecho invÃ¡lido rejeita toda a animaÃ§Ã£o. */
+/** Resolve o caminho de forma atômica: um único trecho inválido rejeita toda a animação. */
 export function resolvePathNodes(
   nodes: readonly JourneyNode[],
   pathIds: readonly string[],

@@ -2,6 +2,7 @@ import { useRouter } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import { View } from 'react-native';
 import { AdariPortrait, Button, Card, CelestialDivider, Screen, Text } from '@/components';
+import { ONLINE_FEATURES_ENABLED } from '@/config/features';
 import { BRAND } from '@/constants/brand';
 import { useSessionStore } from '@/stores/sessionStore';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -26,7 +27,7 @@ export default function Welcome(): React.ReactElement {
   return (
     <Screen scroll contentStyle={{ flexGrow: 1, justifyContent: 'center' }} testID="welcome-screen">
       <View style={{ alignItems: 'center', gap: theme.spacing.md }}>
-        <AdariPortrait creatureKey="solivar" size={132} mood="ready" evolved />
+        <AdariPortrait creatureKey="solivar" size={132} mood="ready" />
         <Text variant="display" center>
           {BRAND.appName}
         </Text>
@@ -52,29 +53,33 @@ export default function Welcome(): React.ReactElement {
         </Text>
       </View>
 
-      <View style={{ gap: theme.spacing.md }}>
-        <Button
-          label="Criar uma conta"
-          variant="secondary"
-          onPress={() => router.push('/(auth)/register')}
-          accessibilityHint="Abre o formulário para criar uma conta."
-          testID="welcome-register"
-        />
-        <Button
-          label="Entrar"
-          variant="ghost"
-          onPress={() => router.push('/(auth)/login')}
-          accessibilityHint="Abre a tela para entrar em uma conta existente."
-          testID="welcome-login"
-        />
-      </View>
+      {ONLINE_FEATURES_ENABLED ? (
+        <>
+          <View style={{ gap: theme.spacing.md }}>
+            <Button
+              label="Criar uma conta"
+              variant="secondary"
+              onPress={() => router.push('/(auth)/register')}
+              accessibilityHint="Abre o formulário para criar uma conta."
+              testID="welcome-register"
+            />
+            <Button
+              label="Entrar"
+              variant="ghost"
+              onPress={() => router.push('/(auth)/login')}
+              accessibilityHint="Abre a tela para entrar em uma conta existente."
+              testID="welcome-login"
+            />
+          </View>
 
-      <Card variant="surfaceAlt">
-        <Text variant="caption" color="textMuted" center>
-          A conta é opcional. Ela serve para participar de ligas com amigos e manter um backup do seu
-          progresso. Você pode criar uma conta depois, quando quiser.
-        </Text>
-      </Card>
+          <Card variant="surfaceAlt">
+            <Text variant="caption" color="textMuted" center>
+              A conta é opcional. Ela serve para participar de ligas com amigos e manter um backup do
+              seu progresso. Você pode criar uma conta depois, quando quiser.
+            </Text>
+          </Card>
+        </>
+      ) : null}
     </Screen>
   );
 }

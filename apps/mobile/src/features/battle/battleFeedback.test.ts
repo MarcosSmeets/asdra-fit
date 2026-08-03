@@ -13,12 +13,12 @@ describe('feedback visual da batalha', () => {
     });
   });
 
-  it('nÃ£o inventa bloqueio quando a defesa nÃ£o teve efeito', () => {
+  it('não inventa bloqueio quando a defesa não teve efeito', () => {
     const event: BattleEvent = { round: 1, side: 'player', kind: 'ability', damage: 12, text: '12 de dano.' };
     expect(battleVisualFeedback([event], 1)).toMatchObject({ damage: 12, rawDamage: 12, blockedDamage: 0 });
   });
 
-  it('nÃ£o produz feedback sem evento', () => {
+  it('não produz feedback sem evento', () => {
     expect(battleVisualFeedback([], 0)).toBeUndefined();
   });
 });

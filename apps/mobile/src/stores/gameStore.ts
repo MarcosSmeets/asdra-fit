@@ -15,6 +15,7 @@ import {
   type VictoryResult,
 } from '../services/campaignService';
 import type { BattleResult } from '../db/models';
+import { track } from '../services/analyticsService';
 import { evolveCreature, getCreature, selectCreature } from '../services/creatureService';
 import { getActiveGoal, saveGoal, type SaveGoalInput } from '../services/goalService';
 import { getCurrentWeek, getStreak } from '../services/progressService';
@@ -78,8 +79,8 @@ export const useGameStore = create<GameState>((set) => ({
   },
 
   evolve: async () => {
-    const creature = await evolveCreature();
-    set({ creature });
+    const result = await evolveCreature();
+    set({ creature: result?.creature ?? null });
   },
 
   chooseCreature: async (key, nickname) => {
@@ -95,6 +96,7 @@ export const useGameStore = create<GameState>((set) => ({
 
   finishBattle: async (input) => {
     const result = await recordBattle(input);
+    void track('battle_finished', { result: input.result });
     const [creature, campaign] = await Promise.all([getCreature(), getCampaign()]);
     set({ creature, campaign });
     return result;

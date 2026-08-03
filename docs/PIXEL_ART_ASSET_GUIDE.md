@@ -1,5 +1,11 @@
 # Guia de assets pixel art
 
+> **Build 5:** a fonte de verdade visual atual é `PIXEL_ART_VISUAL_BIBLE.md`;
+> os assets por estágio evolutivo vivem em `assets/pixel-art/` com manifests
+> descritos em `ADARI_ASSET_MANIFEST.md` e pendências em
+> `PIXEL_ART_ASSET_BACKLOG.md`. As seções abaixo documentam a organização
+> legada (Build 4) que continua válida para o atlas v2 e o Observatório.
+
 ## Organização
 
 ```text
@@ -9,6 +15,9 @@ assets/
   avatars/default/{idle,walk,interact}/
   adaris/{brontu,velune,myrin}/{idle,walk,run,sleep,eat,affection}/
   foods/
+  pixel-art/                      # Build 5 (gerado por tools/pixel-art)
+    adaris/<linha>/<estágio>/{home-actions,portrait,silhouette}-v1[@2x|@3x].png
+    journey/<região>/{tile-ground,tile-path,portal}-v1[@2x|@3x].png
 ```
 
 O cenário v1 foi gerado como arte original para o projeto: sala 2.5D vertical, azul meia-noite, marfim e ouro, sem texto/personagens/IP de terceiros. O arquivo-fonte tem 942 × 1676 e é renderizado no mundo lógico 720 × 1280.

@@ -33,6 +33,7 @@ describe('profileRepository avatar appearance', () => {
     await profileRepository.upsert(db, profile);
     const restored = await profileRepository.get(db);
 
-    expect(restored?.avatarAppearance).toEqual(profile.avatarAppearance);
+    // Contas antigas (sem accessoryKey) são normalizadas para 'none' ao restaurar.
+    expect(restored?.avatarAppearance).toEqual({ ...profile.avatarAppearance, accessoryKey: 'none' });
   });
 });

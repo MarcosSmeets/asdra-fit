@@ -1,5 +1,5 @@
 import type { INestApplication } from '@nestjs/common';
-import { Test } from '@nestjs/testing';
+import { Test, type TestingModuleBuilder } from '@nestjs/testing';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/prisma/prisma.service';
@@ -16,8 +16,12 @@ export interface TestContext {
   prisma: PrismaService;
 }
 
-export async function createTestApp(): Promise<TestContext> {
-  const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
+export async function createTestApp(
+  customize?: (builder: TestingModuleBuilder) => TestingModuleBuilder,
+): Promise<TestContext> {
+  let builder = Test.createTestingModule({ imports: [AppModule] });
+  if (customize) builder = customize(builder);
+  const moduleRef = await builder.compile();
   const app = moduleRef.createNestApplication();
   app.setGlobalPrefix('api/v1');
   await app.init();
@@ -31,6 +35,9 @@ const TABLES = [
   'LeagueInvite',
   'LeagueMember',
   'League',
+  'UserAdariEvolutionHistory',
+  'UserAdariAttributeState',
+  'UserAdariLevelUpReward',
   'ActivityReward',
   'Activity',
   'BattleSession',
@@ -41,6 +48,7 @@ const TABLES = [
   'UserCreature',
   'NotificationPreference',
   'LocalProfileConversion',
+  'PasswordResetToken',
   'RefreshToken',
   'SyncOperation',
   'Device',

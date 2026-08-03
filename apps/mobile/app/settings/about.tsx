@@ -5,6 +5,7 @@ import { View } from 'react-native';
 import { Card, Screen, SectionHeader, Text } from '@/components';
 import { BRAND } from '@/constants/brand';
 import { useTheme } from '@/theme/ThemeProvider';
+import { ONLINE_FEATURES_ENABLED } from '@/config/features';
 
 export default function About(): React.ReactElement {
   const theme = useTheme();
@@ -40,14 +41,16 @@ export default function About(): React.ReactElement {
 
       <View style={{ gap: theme.spacing.sm }}>
         <SectionHeader title="Documentos" />
-        <Text
-          variant="label"
-          color="primary"
-          accessibilityRole="link"
-          onPress={() => router.push('/settings/privacy')}
-        >
-          Termos de uso
-        </Text>
+        {ONLINE_FEATURES_ENABLED ? (
+          <Text
+            variant="label"
+            color="primary"
+            accessibilityRole="link"
+            onPress={() => router.push('/settings/privacy')}
+          >
+            Termos de uso
+          </Text>
+        ) : null}
         <Text
           variant="label"
           color="primary"
@@ -57,6 +60,16 @@ export default function About(): React.ReactElement {
           Política de privacidade
         </Text>
       </View>
+
+      {!ONLINE_FEATURES_ENABLED ? (
+        <Card style={{ gap: theme.spacing.sm }}>
+          <Text variant="section">Aviso do beta</Text>
+          <Text variant="body" color="textMuted">
+            Esta versão é experimental e salva tudo apenas no dispositivo. Desinstalar o app apaga
+            o progresso porque conta e backup ainda não fazem parte deste beta.
+          </Text>
+        </Card>
+      ) : null}
     </Screen>
   );
 }

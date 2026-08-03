@@ -1,13 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import {
+  ATTRIBUTE_REWARD_CALCULATION_VERSION,
   computeDayRewards,
   computeStreak,
   computeWeeklyProgress,
   countValidDays,
+  cumulativeStageStatBoost,
   defaultEquippedAbilityIds,
   getCreatureByKey,
   getWeekBounds,
   levelFromTotalXp,
+  materializeAttributes,
   unlockedAbilities,
   type AttributeChanges,
   type WeekOutcome,
@@ -147,13 +150,15 @@ export class ProgressionService {
       })),
     ));
     const rewardById = new Map(rewards.map((reward) => [reward.activityId, reward]));
-    const attributeTotals: AttributeChanges = {};
+    // Pontos de TREINO acumulados (Build 6). O servidor recalcula a partir das
+    // atividades aceitas — nunca confia nos pontos enviados pelo cliente.
+    const trainingTotals: AttributeChanges = {};
     let activityXp = 0;
     for (const reward of rewards) {
       activityXp += reward.finalXp;
-      for (const [key, value] of Object.entries(reward.finalAttributeChanges)) {
+      for (const [key, value] of Object.entries(reward.finalTrainingChanges)) {
         const attribute = key as keyof AttributeChanges;
-        attributeTotals[attribute] = (attributeTotals[attribute] ?? 0) + (value ?? 0);
+        trainingTotals[attribute] = (trainingTotals[attribute] ?? 0) + (value ?? 0);
       }
     }
     const xp = activityXp + (battleXp._sum.xpGranted ?? 0);
@@ -186,21 +191,55 @@ export class ProgressionService {
           },
         });
       }
+      // Reforço permanente por evolução (cumulativo até o estágio atual) —
+      // sem ele, a rematerialização apagaria o ganho de cada estágio.
+      const stageBoost = cumulativeStageStatBoost(creature.creatureKey, creature.evolutionStage);
+      // Fórmula única do jogo: base + estágio + (nível − 1) + ⌊treino ÷ 100⌋.
+      // Como tudo é derivado dos fatos, reprocessar o mesmo lote é idempotente.
+      const materialized = materializeAttributes({
+        baseStats: definition.baseStats,
+        trainingTotals,
+        level,
+        stageBoost,
+      });
       await tx.userCreature.update({
         where: { userId },
         data: {
           xp,
           level,
-          strength: definition.baseStats.strength + (attributeTotals.strength ?? 0),
-          endurance: definition.baseStats.endurance + (attributeTotals.endurance ?? 0),
-          agility: definition.baseStats.agility + (attributeTotals.agility ?? 0),
-          discipline: definition.baseStats.discipline + (attributeTotals.discipline ?? 0),
-          recovery: definition.baseStats.recovery + (attributeTotals.recovery ?? 0),
-          spirit: definition.baseStats.spirit + (attributeTotals.spirit ?? 0),
-          health: definition.baseStats.health,
+          strength: materialized.values.strength,
+          endurance: materialized.values.endurance,
+          agility: materialized.values.agility,
+          discipline: materialized.values.discipline,
+          recovery: materialized.values.recovery,
+          spirit: materialized.values.spirit,
+          health: materialized.values.health,
           equippedAbilities: equipped.length > 0 ? equipped : defaultEquippedAbilityIds(creature.creatureKey, level),
         },
       });
+      for (const entry of materialized.progress) {
+        await tx.userAdariAttributeState.upsert({
+          where: {
+            userAdariId_attribute: { userAdariId: creature.id, attribute: entry.attribute },
+          },
+          create: {
+            userAdariId: creature.id,
+            attribute: entry.attribute,
+            value: entry.value,
+            trainingTotal: entry.trainingTotal,
+            trainingProgress: entry.trainingProgress,
+            progressRequired: entry.progressRequired,
+            calculationVersion: ATTRIBUTE_REWARD_CALCULATION_VERSION,
+          },
+          update: {
+            value: entry.value,
+            trainingTotal: entry.trainingTotal,
+            trainingProgress: entry.trainingProgress,
+            progressRequired: entry.progressRequired,
+            calculationVersion: ATTRIBUTE_REWARD_CALCULATION_VERSION,
+          },
+        });
+      }
     });
   }
 

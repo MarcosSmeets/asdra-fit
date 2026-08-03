@@ -2,7 +2,7 @@ import React from 'react';
 import { Text as RNText, type TextProps as RNTextProps } from 'react-native';
 import { useTheme } from '../theme/ThemeProvider';
 
-type Variant = 'display' | 'title' | 'heading' | 'section' | 'body' | 'label' | 'caption';
+type Variant = 'display' | 'title' | 'heading' | 'section' | 'hud' | 'body' | 'label' | 'caption';
 
 export type TextColor =
   | 'text'
@@ -24,8 +24,9 @@ export interface TextProps extends RNTextProps {
 }
 
 /**
- * Títulos usam a serifada (Cormorant) para momentos narrativos; corpo/números/
- * controles usam a sans (Inter), altamente legível. Nunca serif em inputs/números.
+ * Títulos curtos, nomes, estágios e HUD usam a fonte pixelada (Pixelify Sans);
+ * corpo, formulários e textos longos usam a sans (Inter), altamente legível.
+ * Nunca a pixelada em parágrafos longos nem em inputs (spec §9).
  */
 export function Text({
   variant = 'body',
@@ -38,10 +39,11 @@ export function Text({
   const { fontSize, fontFamily } = theme;
 
   const specs: Record<Variant, { size: number; family: string }> = {
-    display: { size: fontSize.display, family: fontFamily.serifBold },
-    title: { size: fontSize.xxl, family: fontFamily.serifBold },
-    heading: { size: fontSize.xl, family: fontFamily.serif },
-    section: { size: fontSize.lg, family: fontFamily.sansSemibold },
+    display: { size: fontSize.display, family: fontFamily.pixelBold },
+    title: { size: fontSize.xxl, family: fontFamily.pixelBold },
+    heading: { size: fontSize.xl, family: fontFamily.pixel },
+    section: { size: fontSize.lg, family: fontFamily.pixel },
+    hud: { size: fontSize.sm, family: fontFamily.pixel },
     body: { size: fontSize.md, family: fontFamily.sans },
     label: { size: fontSize.sm, family: fontFamily.sansMedium },
     caption: { size: fontSize.xs, family: fontFamily.sans },

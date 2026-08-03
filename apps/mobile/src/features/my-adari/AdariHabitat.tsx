@@ -1,7 +1,8 @@
 import { getAdariBehaviorProfile } from '@ad-sidera/shared';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, StyleSheet, View } from 'react-native';
-import Svg, { Ellipse, G, Polygon } from 'react-native-svg';
+import type { AdariStageRenderConfig } from '../../content/adari';
+import { useTheme } from '../../theme/ThemeProvider';
 import type { AdariVisualState } from './state';
 
 const SPOTS: Record<string, readonly number[]> = {
@@ -10,19 +11,31 @@ const SPOTS: Record<string, readonly number[]> = {
   solivar: [0, 54, 0, -50, 0],
 };
 
-export function AdariHabitat({ creatureKey, state, reduceMotion, size, children }: {
+const DEFAULT_SHADOW: AdariStageRenderConfig['shadow'] = { widthRatio: 0.55, heightRatio: 0.1, offsetY: 0 };
+
+/**
+ * Palco do Adari na home: plataforma pixel em degraus (Views duras, sem SVG),
+ * sombra de contato do renderConfig do estágio e o passeio de "curiosidade"
+ * pelos pontos da cena preservado do Build 4.
+ */
+export function AdariHabitat({ creatureKey, state, reduceMotion, size, shadow = DEFAULT_SHADOW, roamingEnabled = false, children }: {
   creatureKey: string;
   state: AdariVisualState;
   reduceMotion: boolean;
   size: number;
+  /** Sombra de contato por estágio (manifest.renderConfig.shadow). */
+  shadow?: AdariStageRenderConfig['shadow'];
+  /** Passeio pelos pontos da cena. Desligado por padrão: idle é estático. */
+  roamingEnabled?: boolean;
   children: (sceneState: AdariVisualState) => React.ReactNode;
 }): React.ReactElement {
+  const theme = useTheme();
   const profile = useMemo(() => getAdariBehaviorProfile(creatureKey), [creatureKey]);
   const spots = SPOTS[creatureKey] ?? SPOTS.solivar!;
   const [spotIndex, setSpotIndex] = useState(0);
   const translateX = useRef(new Animated.Value(0)).current;
   const depthScale = useRef(new Animated.Value(1)).current;
-  const roaming = state === 'idle' && !reduceMotion;
+  const roaming = roamingEnabled && state === 'idle' && !reduceMotion;
 
   useEffect(() => {
     if (!roaming) {
@@ -47,20 +60,38 @@ export function AdariHabitat({ creatureKey, state, reduceMotion, size, children 
   }, [depthScale, roaming, spotIndex, spots, translateX]);
 
   const sceneState: AdariVisualState = state !== 'idle' ? state : (spots[spotIndex] ?? 0) === 0 ? 'idle' : 'curious';
+  const palette = theme.palette;
+  const platformWidth = size * 0.98;
+  const step = theme.pixelUnit * 2;
+
   return (
     <View style={[styles.habitat, { minHeight: size * 0.78 }]}>
-      <View pointerEvents="none" style={[styles.rug, { width: size * 0.98, height: size * 0.42 }]}>
-        <Svg width="100%" height="100%" viewBox="0 0 120 52">
-          <Ellipse cx="60" cy="28" rx="57" ry="22" fill="#182E4A" stroke="#D8B967" strokeWidth="2" />
-          <Ellipse cx="60" cy="27" rx="47" ry="16" fill="#29485B" stroke="#7CB7AC" strokeWidth="1" />
-          <G fill="#E6CA79" opacity={0.82}>
-            <Polygon points="60,10 64,22 77,22 67,29 71,41 60,34 49,41 53,29 43,22 56,22" />
-          </G>
-        </Svg>
+      {/* plataforma astral em degraus: três faixas empilhadas afunilando */}
+      <View pointerEvents="none" style={[styles.platform, { width: platformWidth }]}>
+        <View style={{
+          alignSelf: 'center', width: platformWidth * 0.66, height: step,
+          backgroundColor: palette.cosmic.indigo,
+          borderColor: palette.neutral.border, borderTopWidth: 1,
+        }} />
+        <View style={{
+          alignSelf: 'center', width: platformWidth * 0.86, height: step * 1.5,
+          backgroundColor: palette.cosmic.midnight,
+          borderColor: palette.energy.teal, borderTopWidth: 1,
+        }} />
+        <View style={{
+          alignSelf: 'center', width: platformWidth, height: step * 2,
+          backgroundColor: palette.neutral.panel,
+          borderColor: palette.stellar.gold, borderTopWidth: 1,
+        }} />
       </View>
       <Animated.View style={[styles.actor, { width: size, height: size,
         transform: [{ translateX }, { scale: depthScale }] }]}>
-        <View pointerEvents="none" style={[styles.shadow, { width: size * 0.55, height: size * 0.1 }]} />
+        <View pointerEvents="none" style={[styles.shadow, {
+          width: size * shadow.widthRatio,
+          height: size * shadow.heightRatio,
+          backgroundColor: palette.cosmic.deepest,
+          transform: [{ translateY: shadow.offsetY }, { scaleY: 0.58 }],
+        }]} />
         {children(sceneState)}
       </Animated.View>
     </View>
@@ -69,8 +100,7 @@ export function AdariHabitat({ creatureKey, state, reduceMotion, size, children 
 
 const styles = StyleSheet.create({
   habitat: { alignItems: 'center', justifyContent: 'flex-end', overflow: 'visible' },
-  rug: { position: 'absolute', bottom: '2%', opacity: 0.95 },
+  platform: { position: 'absolute', bottom: '1%', opacity: 0.96 },
   actor: { alignItems: 'center', justifyContent: 'flex-end' },
-  shadow: { position: 'absolute', bottom: '5%', borderRadius: 999,
-    backgroundColor: 'rgba(2,7,14,0.52)', transform: [{ scaleY: 0.58 }] },
+  shadow: { position: 'absolute', bottom: '5%', opacity: 0.62 },
 });

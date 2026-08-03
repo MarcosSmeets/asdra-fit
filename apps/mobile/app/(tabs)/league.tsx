@@ -1,4 +1,4 @@
-import { useFocusEffect, useRouter } from 'expo-router';
+import { Redirect, useFocusEffect, useRouter } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import { Pressable, View } from 'react-native';
 import {
@@ -17,6 +17,7 @@ import {
   Text,
 } from '@/components';
 import { ApiError, apiRequest } from '@/api/client';
+import { ONLINE_FEATURES_ENABLED } from '@/config/features';
 import { useOnline } from '@/hooks/useOnline';
 import { useSessionStore } from '@/stores/sessionStore';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -61,7 +62,7 @@ function errorMessage(e: unknown, fallback: string): string {
   return e instanceof ApiError ? e.message : fallback;
 }
 
-export default function LeagueScreen(): React.ReactElement {
+function LeagueScreen(): React.ReactElement {
   const theme = useTheme();
   const router = useRouter();
   const mode = useSessionStore((s) => s.mode);
@@ -446,4 +447,9 @@ export default function LeagueScreen(): React.ReactElement {
       </BottomSheet>
     </Screen>
   );
+}
+
+export default function LeagueRoute(): React.ReactElement {
+  if (!ONLINE_FEATURES_ENABLED) return <Redirect href="/(tabs)" />;
+  return <LeagueScreen />;
 }

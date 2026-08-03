@@ -1,20 +1,22 @@
 import { loginSchema } from '@ad-sidera/shared';
-import { useRouter } from 'expo-router';
+import { Redirect, useRouter } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import { View } from 'react-native';
 import { login } from '@/api/auth';
 import { ApiError } from '@/api/client';
 import { Button, Input, Screen, Text } from '@/components';
+import { ONLINE_FEATURES_ENABLED } from '@/config/features';
 import { useSessionStore } from '@/stores/sessionStore';
 import { useTheme } from '@/theme/ThemeProvider';
 import { fullAccountSync } from '@/sync/syncEngine';
+import { entryRouteForProgress } from '@/domain/userProgress';
 
 interface FieldErrors {
   email?: string;
   password?: string;
 }
 
-export default function Login(): React.ReactElement {
+function Login(): React.ReactElement {
   const theme = useTheme();
   const router = useRouter();
 
@@ -39,8 +41,8 @@ export default function Login(): React.ReactElement {
       await useSessionStore.getState().setUser(user);
       await fullAccountSync();
       await useSessionStore.getState().refreshProgress(user.hasCreature);
-      const { progress } = useSessionStore.getState();
-      router.replace(progress.hasCompletedOnboarding ? '/(tabs)' : '/onboarding');
+      const { mode, progress, tutorialCompleted } = useSessionStore.getState();
+      router.replace(entryRouteForProgress(true, mode, progress, tutorialCompleted));
     } catch (error) {
       if (error instanceof ApiError) {
         setFormError(
@@ -151,4 +153,9 @@ export default function Login(): React.ReactElement {
       </View>
     </Screen>
   );
+}
+
+export default function LoginRoute(): React.ReactElement {
+  if (!ONLINE_FEATURES_ENABLED) return <Redirect href="/" />;
+  return <Login />;
 }

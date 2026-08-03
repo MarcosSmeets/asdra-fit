@@ -9,7 +9,9 @@ export const userCreatureSyncPayloadSchema = z.object({
   nickname: z.string().max(30).nullable().optional(),
   level: z.number().int().min(1),
   xp: z.number().int().min(0),
+  /** Informativo: o servidor só altera estágio via operação `adari_evolution`. */
   evolutionStage: z.number().int().min(0),
+  evolvedAt: isoDateTimeSchema.optional(),
   strength: z.number().int().min(0),
   endurance: z.number().int().min(0),
   agility: z.number().int().min(0),
@@ -90,6 +92,24 @@ export const adariInteractionSyncPayloadSchema = z.object({
 });
 export type AdariInteractionSyncPayload = z.infer<typeof adariInteractionSyncPayloadSchema>;
 
+/**
+ * Payload de sync de UMA evolução de estágio (Build 5). Idempotente por
+ * clientGeneratedId (id do registro de histórico). O servidor NUNCA confia no
+ * estágio enviado: revalida requisitos, ordem (sem pulos), não-regressão e
+ * duplicação antes de aplicar.
+ */
+export const adariEvolutionSyncPayloadSchema = z.object({
+  clientGeneratedId: z.string().min(1).max(96),
+  userAdariId: uuidSchema,
+  /** Estágio de origem/destino como inteiro persistido (0..3). */
+  fromStage: z.number().int().min(0).max(3),
+  toStage: z.number().int().min(1).max(3),
+  unlockedAt: isoDateTimeSchema,
+  triggeringReason: z.string().min(1).max(120),
+  calculationVersion: z.number().int().min(1),
+});
+export type AdariEvolutionSyncPayload = z.infer<typeof adariEvolutionSyncPayloadSchema>;
+
 export const observatoryStateSyncPayloadSchema = z.object({
   selectedControlMode: z.enum(['tap', 'directional']),
   unlockedObjects: z.array(z.string().max(64)).max(50),
@@ -115,6 +135,7 @@ export const SYNC_ENTITY_TYPES = [
   'adari_interaction',
   'observatory_state',
   'food_inventory',
+  'adari_evolution',
 ] as const;
 export type SyncEntityType = (typeof SYNC_ENTITY_TYPES)[number];
 

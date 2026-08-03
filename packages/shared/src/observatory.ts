@@ -315,6 +315,86 @@ export function satietyLabel(value: number): string {
   return 'Muito satisfeito';
 }
 
+/**
+ * Reposição natural de alimentos. O jogo não tem loja (decisão de produto), então
+ * o mundo repõe cada alimento sozinho até um teto: quanto MAIS saciedade o
+ * alimento devolve, mais tempo leva para voltar. O cálculo é por tempo decorrido
+ * — vale com o app fechado e é determinístico (mesmo relógio ⇒ mesmo estoque).
+ */
+export const FOOD_REGEN = {
+  /** Teto de estoque por alimento (o mundo repõe até aqui, nunca além). */
+  MAX_PER_FOOD: 3,
+  /** Horas de espera por ponto de saciedade do alimento. */
+  HOURS_PER_SATIETY_POINT: 0.25,
+  /** Piso de espera, para os alimentos mais leves. */
+  MIN_INTERVAL_HOURS: 3,
+} as const;
+
+/** Intervalo de reposição de UMA unidade (mais saciedade ⇒ mais lento). */
+export function foodRegenIntervalHours(food: FoodDefinition): number {
+  const raw = food.satietyValue * FOOD_REGEN.HOURS_PER_SATIETY_POINT;
+  return Math.max(FOOD_REGEN.MIN_INTERVAL_HOURS, Math.round(raw * 2) / 2);
+}
+
+export interface FoodStockState {
+  quantity: number;
+  /** Momento da última mudança/recálculo do estoque deste alimento. */
+  updatedAt: string;
+}
+
+export interface FoodRegenResult extends FoodStockState {
+  regenerated: number;
+}
+
+/** Repõe em blocos completos, preservando a fração de tempo já corrida. */
+export function regenerateFoodStock(
+  food: FoodDefinition,
+  state: FoodStockState,
+  nowIso: string,
+): FoodRegenResult {
+  const now = Date.parse(nowIso);
+  const last = Date.parse(state.updatedAt);
+  const quantity = Math.max(0, Math.floor(state.quantity));
+  if (!Number.isFinite(now) || !Number.isFinite(last) || now <= last) {
+    return { quantity, updatedAt: state.updatedAt, regenerated: 0 };
+  }
+  if (quantity >= FOOD_REGEN.MAX_PER_FOOD) {
+    // Estoque cheio não acumula espera: o relógio só corre depois do consumo.
+    return { quantity: FOOD_REGEN.MAX_PER_FOOD, updatedAt: nowIso, regenerated: 0 };
+  }
+  const intervalMs = foodRegenIntervalHours(food) * 3_600_000;
+  const intervals = Math.floor((now - last) / intervalMs);
+  if (intervals <= 0) {
+    return { quantity, updatedAt: state.updatedAt, regenerated: 0 };
+  }
+  const regenerated = Math.min(intervals, FOOD_REGEN.MAX_PER_FOOD - quantity);
+  return {
+    quantity: quantity + regenerated,
+    updatedAt: new Date(last + regenerated * intervalMs).toISOString(),
+    regenerated,
+  };
+}
+
+/** Horas até a próxima unidade (0 quando o estoque já está no teto). */
+export function hoursUntilNextFood(
+  food: FoodDefinition,
+  state: FoodStockState,
+  nowIso: string,
+): number {
+  const quantity = Math.max(0, Math.floor(state.quantity));
+  const intervalHours = foodRegenIntervalHours(food);
+  if (quantity >= FOOD_REGEN.MAX_PER_FOOD) {
+    return 0;
+  }
+  const now = Date.parse(nowIso);
+  const last = Date.parse(state.updatedAt);
+  if (!Number.isFinite(now) || !Number.isFinite(last) || now <= last) {
+    return intervalHours;
+  }
+  const intervalMs = intervalHours * 3_600_000;
+  return (intervalMs - ((now - last) % intervalMs)) / 3_600_000;
+}
+
 export interface FeedResult {
   accepted: boolean;
   nextSatiety: number;

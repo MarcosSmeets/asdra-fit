@@ -9,12 +9,13 @@ import {
   Chip,
   DailyRewardExplanation,
   EmptyState,
+  ErrorState,
   Screen,
   SectionHeader,
   Skeleton,
   Text,
 } from '@/components';
-import { ACTIVITY_LABELS, INTENSITY_LABELS } from '@/constants/labels';
+import { ACTIVITY_LABELS, ATTRIBUTE_LABELS, INTENSITY_LABELS } from '@/constants/labels';
 import type { ActivityRecord } from '@/db/models';
 import { getRewardSummaries, listActivities } from '@/services/activityService';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -53,25 +54,25 @@ export default function DiaryScreen(): React.ReactElement {
   const [activities, setActivities] = useState<ActivityRecord[]>([]);
   const [rewards, setRewards] = useState<RewardMap>(new Map());
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
   const [period, setPeriod] = useState<PeriodFilter>('all');
 
-  useFocusEffect(
-    useCallback(() => {
-      let active = true;
-      setLoading(true);
-      void (async () => {
-        const data = await listActivities(100);
-        if (active) {
-          setActivities(data);
-          setLoading(false);
-        }
-      })();
-      return () => {
-        active = false;
-      };
-    }, []),
-  );
+  const loadActivities = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      setActivities(await listActivities(100));
+    } catch {
+      setError('Não foi possível carregar o Diário. Seus registros continuam salvos.');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useFocusEffect(useCallback(() => {
+    void loadActivities();
+  }, [loadActivities]));
 
   // Recompensas (badges) para as atividades carregadas; ausência = recompensa completa.
   useEffect(() => {
@@ -180,6 +181,8 @@ export default function DiaryScreen(): React.ReactElement {
           <Skeleton height={72} />
           <Skeleton height={72} />
         </View>
+      ) : error ? (
+        <ErrorState message={error} onRetry={() => void loadActivities()} />
       ) : filtered.length === 0 ? (
         activities.length === 0 ? (
           <EmptyState
@@ -227,28 +230,65 @@ export default function DiaryScreen(): React.ReactElement {
                           }}
                         >
                           <Text variant="heading">{ACTIVITY_LABELS[item.activityType]}</Text>
-                          {item.hasLocalPhoto ? (
-                            <View
-                              style={{
-                                paddingVertical: 2,
-                                paddingHorizontal: theme.spacing.sm,
-                                borderRadius: theme.radius.pill,
-                                backgroundColor: theme.colors.surfaceAlt,
-                                borderWidth: 1,
-                                borderColor: theme.colors.border,
-                              }}
-                            >
-                              <Text variant="caption" color="textMuted">
-                                Foto
-                              </Text>
-                            </View>
-                          ) : null}
+                          <View style={{ flexDirection: 'row', gap: theme.spacing.xs }}>
+                            {/* Selo informativo; a ausência nunca é destacada como negativa. */}
+                            {item.movementSignal === 'confirmed' ? (
+                              <View
+                                style={{
+                                  paddingVertical: 2,
+                                  paddingHorizontal: theme.spacing.sm,
+                                  borderRadius: theme.radius.pill,
+                                  backgroundColor: theme.colors.surfaceAlt,
+                                  borderWidth: 1,
+                                  borderColor: theme.colors.brandTeal,
+                                }}
+                              >
+                                <Text variant="caption" color="brandTeal">
+                                  Movimento confirmado
+                                </Text>
+                              </View>
+                            ) : null}
+                            {item.hasLocalPhoto ? (
+                              <View
+                                style={{
+                                  paddingVertical: 2,
+                                  paddingHorizontal: theme.spacing.sm,
+                                  borderRadius: theme.radius.pill,
+                                  backgroundColor: theme.colors.surfaceAlt,
+                                  borderWidth: 1,
+                                  borderColor: theme.colors.border,
+                                }}
+                              >
+                                <Text variant="caption" color="textMuted">
+                                  Foto
+                                </Text>
+                              </View>
+                            ) : null}
+                          </View>
                         </View>
                         <Text variant="label">
                           {`${item.durationMinutes} min · ${INTENSITY_LABELS[item.perceivedIntensity]}`}
                         </Text>
                         {/* Recompensa: sem registro = recompensa completa. Nunca destacado como negativo. */}
                         <ActivityRewardBadge multiplier={reward?.dailyRewardMultiplier ?? 1} />
+                        {reward ? (
+                          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm }}>
+                            {reward.finalXp > 0 ? (
+                              <Text variant="caption" color="brandGold">+{reward.finalXp} XP</Text>
+                            ) : null}
+                            {reward.finalEnergy > 0 ? (
+                              <Text variant="caption" color="brandTeal">+{reward.finalEnergy} Vigor</Text>
+                            ) : null}
+                            {/* Atributos treinados por esta atividade (não só o XP). */}
+                            {Object.entries(reward.finalAttributeChanges)
+                              .filter(([, points]) => (points ?? 0) > 0)
+                              .map(([attribute, points]) => (
+                                <Text key={attribute} variant="caption" color="text">
+                                  +{points} {ATTRIBUTE_LABELS[attribute] ?? attribute}
+                                </Text>
+                              ))}
+                          </View>
+                        ) : null}
                         <Text variant="caption" color="textMuted">
                           {SYNC_STATUS_LABELS[item.syncStatus]}
                         </Text>

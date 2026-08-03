@@ -10,6 +10,7 @@ export * from './utils/inviteCode';
 // Regras de progressão e pontuação (fonte única — não duplicar em app/api)
 export * from './xp';
 export * from './rewards';
+export * from './attributeProgression';
 export * from './vigor';
 export * from './pveRewards';
 export * from './dailyRewards';
@@ -25,6 +26,7 @@ export * from './duel';
 export * from './time';
 export * from './observatory';
 export * from './avatar';
+export * from './genome';
 
 // Batalha
 export * from './battle';

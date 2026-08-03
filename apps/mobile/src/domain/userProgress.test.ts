@@ -26,7 +26,7 @@ describe('máquina de progresso do usuário', () => {
     expect(progress.hasCompletedOnboarding).toBe(false);
     // A seleção do Adari passou a ser a etapa 7 após a aparência do Explorador.
     expect(firstPendingOnboardingStep(progress)).toBe(7);
-    expect(entryRouteForProgress(true, 'account', progress)).toBe('/onboarding');
+    expect(entryRouteForProgress(true, 'account', progress, false)).toBe('/onboarding');
   });
 
   it('retoma na primeira etapa realmente pendente', () => {
@@ -42,7 +42,12 @@ describe('máquina de progresso do usuário', () => {
   it('só libera as abas quando todas as evidências e o marcador existem', () => {
     const progress = deriveUserProgressState(completeEvidence);
     expect(progress.hasCompletedOnboarding).toBe(true);
-    expect(entryRouteForProgress(true, 'account', progress)).toBe('/(tabs)');
+    expect(entryRouteForProgress(true, 'account', progress, true)).toBe('/(tabs)');
+  });
+
+  it('passa pelo tutorial antes de liberar as abas', () => {
+    const progress = deriveUserProgressState(completeEvidence);
+    expect(entryRouteForProgress(true, 'account', progress, false)).toBe('/getting-started');
   });
 
   it('distingue perfil local de conta vinculada', () => {

@@ -42,9 +42,12 @@ A exclusão usa `onDelete: Cascade` no Prisma para todas as relações do usuár
 
 Os logs estruturados (pino) aplicam **redaction**: removem `authorization`, `cookie`, `password`, `refreshToken`, `notes` (observações) e `operations` (payloads de sync). Segredos e conteúdo privado nunca aparecem em log.
 
-## Dados não vendidos, sem analytics invasivo
+## Dados não vendidos, insights locais opcionais
 
 - Os dados do usuário **não são vendidos** nem compartilhados com terceiros.
-- **Analytics é desativado por padrão** ([DEC-14](DECISIONS.md)): a interface é desacoplada e a implementação é _no-op_. Nada invasivo é coletado.
+- Insights são **desativados por padrão** ([DEC-14](DECISIONS.md)). Quando o usuário
+  ativa, o app mantém apenas contagens locais de uso (dias ativos, atividades,
+  batalhas e aberturas) no próprio SQLite; nada é enviado a servidor. Desativar
+  remove o histórico local.
 
 Contato de privacidade: `privacidade@adsidera.app`.

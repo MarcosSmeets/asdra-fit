@@ -32,6 +32,18 @@ export const refreshSchema = z.object({
 });
 export type RefreshInput = z.infer<typeof refreshSchema>;
 
+export const forgotPasswordSchema = z.object({
+  email: z.string().email().toLowerCase(),
+});
+export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
+
+export const resetPasswordSchema = z.object({
+  email: z.string().email().toLowerCase(),
+  code: z.string().regex(/^\d{6}$/, 'O código tem 6 dígitos'),
+  newPassword: passwordSchema,
+});
+export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
+
 export const registerDeviceSchema = z.object({
   installationId: uuidSchema,
   platform: z.enum(PLATFORMS),

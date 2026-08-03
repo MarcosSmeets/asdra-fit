@@ -29,7 +29,7 @@ import { getBattlePreview } from '@/services/campaignService';
 import type { PveBattlePreview, PveBattleOutcome } from '@/services/pveBattleService';
 import { useGameStore } from '@/stores/gameStore';
 import { uuidv4 } from '@/utils/id';
-import { darkColors } from '@/theme/tokens';
+import { pixelColors } from '@/theme/tokens';
 import { useReducedMotion } from '@/theme/ThemeProvider';
 import {
   BATTLE_ACTION_SEQUENCE,
@@ -172,7 +172,7 @@ function BattleArena({
   if (!enemy || !state) {
     return (
       <DarkPanel>
-        <Text variant="body" style={{ color: darkColors.textMuted }}>
+        <Text variant="body" style={{ color: pixelColors.textMuted }}>
           Não foi possível preparar esta batalha.
         </Text>
       </DarkPanel>
@@ -200,7 +200,7 @@ function BattleArena({
       <BattleStage
         creatureKey={creature.creatureKey}
         playerName={player.name}
-        playerEvolved={creature.evolutionStage > 0}
+        playerStage={creature.evolutionStage}
         playerMood={playerMood}
         enemyName={enemy.combatant.name}
         enemyRegionKey={enemyRegionKey}
@@ -220,10 +220,10 @@ function BattleArena({
       {/* Telegráfico do chefe */}
       {state.status === 'ongoing' && state.enemy.charging ? (
         <View style={styles.telegraph}>
-          <Text variant="label" style={{ color: darkColors.brandGold }}>
+          <Text variant="label" style={{ color: pixelColors.brandGold }}>
             ⚠ {enemy.combatant.name} concentra energia. Próxima ação: golpe forte
           </Text>
-          {telegraphEstimate ? <Text variant="caption" style={{ color: darkColors.text }}>
+          {telegraphEstimate ? <Text variant="caption" style={{ color: pixelColors.text }}>
             Perigo alto · dano estimado {telegraphEstimate.min}–{telegraphEstimate.max} · defender reduz 70%
           </Text> : null}
         </View>
@@ -232,8 +232,8 @@ function BattleArena({
       {/* Ações (habilidades equipadas com recarga) */}
       {state.status === 'ongoing' ? (
         <View style={{ gap: 12 }}>
-          <Text variant="label" style={{ color: acting ? darkColors.brandGold : darkColors.textMuted }}>
-            Turno {state.round + (visualPhase === 'idle' ? 1 : 0)} Â· {BATTLE_PHASE_LABEL[visualPhase]}
+          <Text variant="label" style={{ color: acting ? pixelColors.brandGold : pixelColors.textMuted }}>
+            Turno {state.round + (visualPhase === 'idle' ? 1 : 0)} · {BATTLE_PHASE_LABEL[visualPhase]}
           </Text>
           <View style={styles.actionGrid}>
             {player.abilities.map((ability) => {
@@ -255,11 +255,11 @@ function BattleArena({
             })}
           </View>
           {acting ? <Button label="Pular animação" variant="ghost" onPress={skipAnimations} /> : null}
-          <Text variant="caption" style={{ color: darkColors.textMuted }}>
+          <Text variant="caption" style={{ color: pixelColors.textMuted }}>
             Cada habilidade tem sua recarga. Sua Vida se recupera ao fim da batalha — o Vigor é que
             descansa com o tempo.
           </Text>
-          {__DEV__ ? <Text variant="caption" style={{ color: darkColors.textMuted }}>
+          {__DEV__ ? <Text variant="caption" style={{ color: pixelColors.textMuted }}>
             seed {seed} · turno {state.round} · RNG {state.rngCursor} · cálculo v2
           </Text> : null}
         </View>
@@ -267,11 +267,11 @@ function BattleArena({
 
       {/* Histórico */}
       <DarkPanel>
-        <Text variant="section" style={{ color: darkColors.text }}>
+        <Text variant="section" style={{ color: pixelColors.text }}>
           Histórico
         </Text>
         {recent.length === 0 ? (
-          <Text variant="caption" style={{ color: darkColors.textMuted }}>
+          <Text variant="caption" style={{ color: pixelColors.textMuted }}>
             Escolha uma ação para começar.
           </Text>
         ) : (
@@ -279,7 +279,7 @@ function BattleArena({
             <Text
               key={`${event.round}-${event.side}-${index}`}
               variant="caption"
-              style={{ color: darkColors.textMuted }}
+              style={{ color: pixelColors.textMuted }}
             >
               {event.text}
             </Text>
@@ -323,27 +323,27 @@ function BattleFlow({
   return (
     <SafeAreaView style={styles.root} edges={['top', 'bottom']} testID="battle-screen">
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-        <Text variant="title" style={{ color: darkColors.text }}>
+        <Text variant="title" style={{ color: pixelColors.text }}>
           Batalha
         </Text>
 
         {phase === 'confirm' ? (
           <DarkPanel>
-            <Text variant="heading" style={{ color: darkColors.text }}>
+            <Text variant="heading" style={{ color: pixelColors.text }}>
               {preview.adversary.name}
             </Text>
-            <Text variant="body" style={{ color: darkColors.textMuted }}>
+            <Text variant="body" style={{ color: pixelColors.textMuted }}>
               {preview.adversary.description}
             </Text>
             <View style={styles.infoRow}>
-              <Text variant="label" style={{ color: darkColors.brandTeal }}>
+              <Text variant="label" style={{ color: pixelColors.brandTeal }}>
                 Custo: {preview.vigorCost} de Vigor
               </Text>
-              <Text variant="label" style={{ color: darkColors.text }}>
+              <Text variant="label" style={{ color: pixelColors.text }}>
                 Vigor atual: {preview.currentVigor}
               </Text>
             </View>
-            <Text variant="label" style={{ color: darkColors.textMuted }}>
+            <Text variant="label" style={{ color: pixelColors.textMuted }}>
               Vitórias hoje: {preview.rewardedWinsToday}/5 ·{' '}
               {preview.reachedDailyLimit
                 ? 'limite de recompensa atingido'
@@ -359,7 +359,7 @@ function BattleFlow({
                   accessibilityHint="Começa a batalha, consumindo Vigor ao concluir."
                 />
                 {preview.reachedDailyLimit ? (
-                  <Text variant="caption" style={{ color: darkColors.textMuted }}>
+                  <Text variant="caption" style={{ color: pixelColors.textMuted }}>
                     Você já alcançou o limite de recompensa de hoje — pode batalhar por diversão, sem
                     XP extra.
                   </Text>
@@ -367,7 +367,7 @@ function BattleFlow({
               </>
             ) : (
               <>
-                <Text variant="body" style={{ color: darkColors.brandGold }}>
+                <Text variant="body" style={{ color: pixelColors.brandGold }}>
                   Vigor insuficiente. O Vigor se recupera com o tempo — descanse um pouco e volte.
                 </Text>
                 <BattleActionButton
@@ -399,7 +399,7 @@ function BattleFlow({
           <DarkPanel>
             <Text
               variant="heading"
-              style={{ color: outcome.result === 'victory' ? darkColors.success : darkColors.text }}
+              style={{ color: outcome.result === 'victory' ? pixelColors.success : pixelColors.text }}
             >
               {outcome.result === 'victory' ? 'Vitória!' : 'Dessa vez não deu'}
             </Text>
@@ -407,35 +407,35 @@ function BattleFlow({
             {outcome.result === 'victory' ? (
               <>
                 {outcome.milestoneUnlocked ? (
-                  <Text variant="body" style={{ color: darkColors.brandGold }}>
+                  <Text variant="body" style={{ color: pixelColors.brandGold }}>
                     Nova conquista na jornada desbloqueada!
                   </Text>
                 ) : null}
                 {outcome.rewardedWin && outcome.xpGranted > 0 ? (
-                  <Text variant="label" style={{ color: darkColors.brandGold }}>
+                  <Text variant="label" style={{ color: pixelColors.brandGold }}>
                     +{outcome.xpGranted} XP
                   </Text>
                 ) : (
-                  <Text variant="body" style={{ color: darkColors.textMuted }}>
+                  <Text variant="body" style={{ color: pixelColors.textMuted }}>
                     Limite de recompensa de hoje atingido ({outcome.dailyRewardedWins}/5). Ótimo
                     treino!
                   </Text>
                 )}
                 {outcome.leveledUp ? (
-                  <Text variant="body" style={{ color: darkColors.success }}>
+                  <Text variant="body" style={{ color: pixelColors.success }}>
                     Subiu de nível!
                   </Text>
                 ) : null}
               </>
             ) : (
-              <Text variant="body" style={{ color: darkColors.textMuted }}>
+              <Text variant="body" style={{ color: pixelColors.textMuted }}>
                 {enemyIsBoss
                   ? 'O golpe anunciado resolve no turno seguinte. Use sua Defesa quando o aviso aparecer e aproveite a abertura com a habilidade especial.'
                   : 'Observe o padrão do adversário, respeite as recargas e use Defesa antes dos golpes mais fortes.'}
               </Text>
             )}
 
-            <Text variant="caption" style={{ color: darkColors.textMuted }}>
+            <Text variant="caption" style={{ color: pixelColors.textMuted }}>
               Vigor gasto: {outcome.vigorSpent} · Vigor restante: {outcome.creature.attributes.energy}/{outcome.creature.maxVigor} · Vitórias hoje: {outcome.dailyRewardedWins}/5
             </Text>
 
@@ -523,23 +523,23 @@ export default function BattleScreen(): React.ReactElement {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: darkColors.background },
+  root: { flex: 1, backgroundColor: pixelColors.background },
   scroll: { padding: 16, gap: 16 },
   actionGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   actionCell: { flexBasis: '47%', flexGrow: 1 },
   telegraph: {
-    backgroundColor: darkColors.surfaceElevated,
-    borderColor: darkColors.brandGold,
+    backgroundColor: pixelColors.surfaceElevated,
+    borderColor: pixelColors.brandGold,
     borderWidth: 1,
     borderRadius: 14,
     padding: 12,
   },
   infoRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 12 },
   panel: {
-    backgroundColor: darkColors.surface,
+    backgroundColor: pixelColors.surface,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: darkColors.border,
+    borderColor: pixelColors.border,
     padding: 16,
     gap: 8,
   },

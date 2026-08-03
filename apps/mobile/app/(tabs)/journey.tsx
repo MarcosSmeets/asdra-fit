@@ -1,4 +1,4 @@
-import { DEFAULT_PLAYER_AVATAR_APPEARANCE, checkEvolution, getCreatureByKey, hoursUntilFullVigor, vigorCostForBattle, type PlayerAvatarAppearance } from '@ad-sidera/shared';
+import { ADARI_STAGE_LABEL, DEFAULT_PLAYER_AVATAR_APPEARANCE, getCreatureByKey, hoursUntilFullVigor, stageFromInt, vigorCostForBattle, type PlayerAvatarAppearance } from '@ad-sidera/shared';
 import { Redirect, useFocusEffect, useRouter } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import { View } from 'react-native';
@@ -20,13 +20,14 @@ import {
 import { companionDisplayName } from '@/constants/brand';
 import type { RegionState } from '@/domain/campaign';
 import type { AdversaryState } from '@/domain/campaign';
+import { evolutionCheckFor, nextStageFor } from '@/domain/creatureAggregate';
 import { useGameStore } from '@/stores/gameStore';
 import { useTheme } from '@/theme/ThemeProvider';
 import { getPlayerAvatarAppearance } from '@/services/playerAvatarService';
 
-/** Rótulo do estágio de evolução para exibição. */
+/** Rótulo do estágio de evolução para exibição (fonte única no shared). */
 function stageLabel(stage: number): string {
-  return stage === 0 ? 'Forma inicial' : `Estágio evoluído ${stage}`;
+  return ADARI_STAGE_LABEL[stageFromInt(stage)];
 }
 
 export default function JourneyScreen(): React.ReactElement {
@@ -101,22 +102,8 @@ export default function JourneyScreen(): React.ReactElement {
   const definition = getCreatureByKey(creature.creatureKey);
   const speciesName = definition?.name;
   const heroName = companionDisplayName(creature.nickname ?? speciesName);
-  const evolved = creature.evolutionStage > 0;
-  const evolution = definition?.evolution ?? null;
-
-  const evolutionCheck =
-    creature.evolutionStage === 0 && evolution
-      ? checkEvolution(
-          {
-            level: creature.level,
-            weeksGoalMet: streak?.completedWeeks ?? 0,
-            totalActivities: creature.totalActivities,
-            attributes: creature.attributes,
-            defeatedMilestones: creature.defeatedMilestones,
-          },
-          evolution.requirements,
-        )
-      : null;
+  const nextStage = nextStageFor(creature) ?? null;
+  const evolutionCheck = evolutionCheckFor(creature, streak?.completedWeeks ?? 0);
 
   const totalAdversaries = campaign.reduce((sum, r) => sum + r.adversaries.length, 0);
   const defeatedAdversaries = campaign.reduce(
@@ -145,6 +132,7 @@ export default function JourneyScreen(): React.ReactElement {
           onSelect={openBattle}
           avatarAppearance={avatarAppearance}
           creatureKey={creature.creatureKey}
+          creatureStage={creature.evolutionStage}
           showTravelers={region.region.key === activeRegionKey}
         />
       ))}
@@ -156,7 +144,7 @@ export default function JourneyScreen(): React.ReactElement {
         <AdariPortrait
           creatureKey={creature.creatureKey}
           size={120}
-          evolved={evolved}
+          stage={creature.evolutionStage}
           mood="ready"
           accessibilityLabel={`${heroName}, ${stageLabel(creature.evolutionStage)}, nível ${creature.level}`}
         />
@@ -233,18 +221,19 @@ export default function JourneyScreen(): React.ReactElement {
       </Card>
 
       {/* Evolução */}
-      {evolution ? (
+      {!nextStage ? (
         <Card style={{ gap }}>
-          <SectionHeader title="Evolução" subtitle={evolved ? undefined : `Próxima forma: ${evolution.toName}`} />
-          {evolved ? (
-            <Text variant="body" color="success">
-              Evolução concluída. Seu Adari alcançou uma nova forma.
-            </Text>
-          ) : (
-            <>
-              <Text variant="body" color="textMuted">
-                {evolution.description}
-              </Text>
+          <SectionHeader title="Evolução" subtitle={stageLabel(creature.evolutionStage)} />
+          <Text variant="body" color="success">
+            Evolução Perfeita alcançada. Seu Adari atingiu a forma final da linha.
+          </Text>
+        </Card>
+      ) : (
+        <Card style={{ gap }}>
+          <SectionHeader title="Evolução" subtitle={`Próxima forma: ${nextStage.name}`} />
+          <Text variant="body" color="textMuted">
+            {nextStage.description}
+          </Text>
               {evolutionCheck ? (
                 <View style={{ gap: theme.spacing.sm }}>
                   {evolutionCheck.requirements.map((req) => (
@@ -285,10 +274,8 @@ export default function JourneyScreen(): React.ReactElement {
                   )}
                 </View>
               ) : null}
-            </>
-          )}
         </Card>
-      ) : null}
+      )}
 
       <CelestialDivider />
 
@@ -311,7 +298,7 @@ export default function JourneyScreen(): React.ReactElement {
           <AdariPortrait
             creatureKey={creature.creatureKey}
             size={128}
-            evolved
+            stage={creature.evolutionStage}
             mood="happy"
             accessibilityLabel={`${heroName} evoluído, radiante`}
           />

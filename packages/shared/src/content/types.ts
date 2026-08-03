@@ -1,5 +1,5 @@
 import type { DifficultyType } from '../constants';
-import type { EvolutionRequirements } from '../evolution';
+import type { AdariEvolutionStage, EvolutionRequirements } from '../evolution';
 import type { Archetype } from '../enums';
 import type { AttributeKey, AttributeSet } from '../types';
 import type { BattleAbility, BattleStats, BehaviorProfile, BossConfig } from '../battle/types';
@@ -21,6 +21,38 @@ export interface CreatureEvolutionDef {
   requirements: EvolutionRequirements;
 }
 
+/**
+ * Definição de UM estágio da linha evolutiva (Build 5). Nomes, requisitos e
+ * reforços vivem AQUI (conteúdo) — nunca hardcoded em componentes.
+ */
+export interface AdariStageDefinition {
+  stage: AdariEvolutionStage;
+  /** Chave interna do estágio (assets/aliases). BASE reutiliza a key da linha. */
+  key: string;
+  /** Nome público do estágio (ex.: Brontu, Brontar, Bronterra, Asterhorn). */
+  name: string;
+  description: string;
+  /** Texto narrativo exibido na cerimônia de evolução. */
+  narrative: string;
+  /** Descrição textual do visual (acessibilidade e briefing de arte). */
+  visualDescription: string;
+  /** Reforço permanente aplicado AO ENTRAR no estágio (vazio para BASE). */
+  statBoost: Partial<AttributeSet>;
+  /** Habilidade destacada/consolidada por este estágio (cerimônia), ou null. */
+  highlightedAbilityId: string | null;
+  /** Requisitos para ALCANÇAR este estágio (null para BASE). */
+  requirements: EvolutionRequirements | null;
+  /** Chave do manifest de assets: `<linha>/<estágio-kebab>`. */
+  assetManifestKey: string;
+  contentVersion: number;
+}
+
+/** Linha evolutiva completa de um Adari (sempre 4 estágios ordenados). */
+export interface AdariEvolutionLine {
+  adariKey: string;
+  stages: readonly AdariStageDefinition[];
+}
+
 export interface CreatureDefinition {
   key: string;
   name: string;
@@ -33,6 +65,11 @@ export interface CreatureDefinition {
   baseStats: AttributeSet;
   basicAbility: CreatureAbilityDef;
   specialAbility: CreatureAbilityDef;
+  /** Linha evolutiva de 4 estágios (BASE → EV 1 → EV 2 → PERFECT). */
+  stages: readonly AdariStageDefinition[];
+  /**
+   * @deprecated Compat Build 4: aponta para o estágio PERFECT. Use `stages`.
+   */
   evolution: CreatureEvolutionDef;
   contentVersion: number;
 }

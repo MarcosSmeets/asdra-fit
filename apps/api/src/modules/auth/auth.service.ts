@@ -5,15 +5,21 @@ import {
 } from '@nestjs/common';
 import type {
   AuthTokens,
+  ForgotPasswordInput,
   LoginInput,
   RegisterInput,
+  ResetPasswordInput,
   ConvertLocalProfileInput,
 } from '@ad-sidera/shared';
-import { hashPassword, verifyPassword } from '../../common/hashing';
+import { hashPassword, secureRandomInt, sha256, verifyPassword } from '../../common/hashing';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { UsersService } from '../users/users.service';
+import { MailerService } from './mailer.service';
 import { TokenService } from './token.service';
+
+const RESET_CODE_TTL_MINUTES = 30;
+const RESET_CODE_MAX_ATTEMPTS = 5;
 
 export interface AuthUserSummary {
   id: string;
@@ -35,6 +41,7 @@ export class AuthService {
     private readonly users: UsersService,
     private readonly tokens: TokenService,
     private readonly audit: AuditService,
+    private readonly mailer: MailerService,
   ) {}
 
   async register(input: RegisterInput, correlationId?: string): Promise<AuthResult> {
@@ -155,6 +162,79 @@ export class AuthService {
     await this.audit.log({ userId: user.id, action: 'auth.login', correlationId });
     const tokens = await this.tokens.issueTokens(user.id);
     return { user: await this.summary(user.id), tokens };
+  }
+
+  /**
+   * Solicita um código de redefinição. A resposta é idêntica com ou sem conta
+   * cadastrada (anti-enumeração); o código só existe no e-mail (ou no log em dev).
+   */
+  async forgotPassword(
+    input: ForgotPasswordInput,
+    correlationId?: string,
+  ): Promise<{ message: string }> {
+    const user = await this.users.findByEmail(input.email);
+    if (user && user.status === 'active' && !user.deletedAt) {
+      const code = String(secureRandomInt(1_000_000)).padStart(6, '0');
+      const expiresAt = new Date(Date.now() + RESET_CODE_TTL_MINUTES * 60 * 1000);
+      await this.prisma.$transaction(async (tx) => {
+        // Um único código válido por conta: solicitar de novo invalida o anterior.
+        await tx.passwordResetToken.deleteMany({ where: { userId: user.id } });
+        await tx.passwordResetToken.create({
+          data: { userId: user.id, codeHash: this.resetCodeHash(user.id, code), expiresAt },
+        });
+      });
+      await this.audit.log({ userId: user.id, action: 'auth.password_reset_requested', correlationId });
+      await this.mailer.sendPasswordResetCode({
+        to: user.email,
+        code,
+        expiresMinutes: RESET_CODE_TTL_MINUTES,
+      });
+    }
+    return { message: 'Se o e-mail estiver cadastrado, enviaremos um código de redefinição.' };
+  }
+
+  /** Redefine a senha com o código recebido e revoga todas as sessões ativas. */
+  async resetPassword(input: ResetPasswordInput, correlationId?: string): Promise<void> {
+    const invalid = (): UnauthorizedException =>
+      new UnauthorizedException('Código inválido ou expirado.');
+    const user = await this.users.findByEmail(input.email);
+    if (!user || user.status !== 'active' || user.deletedAt) throw invalid();
+
+    const token = await this.prisma.passwordResetToken.findFirst({
+      where: { userId: user.id, usedAt: null },
+      orderBy: { createdAt: 'desc' },
+    });
+    if (
+      !token ||
+      token.expiresAt.getTime() < Date.now() ||
+      token.attempts >= RESET_CODE_MAX_ATTEMPTS
+    ) {
+      throw invalid();
+    }
+    if (token.codeHash !== this.resetCodeHash(user.id, input.code)) {
+      await this.prisma.passwordResetToken.update({
+        where: { id: token.id },
+        data: { attempts: { increment: 1 } },
+      });
+      await this.audit.log({ userId: user.id, action: 'auth.password_reset_failed', correlationId });
+      throw invalid();
+    }
+
+    const passwordHash = await hashPassword(input.newPassword);
+    await this.prisma.$transaction(async (tx) => {
+      await tx.user.update({ where: { id: user.id }, data: { passwordHash } });
+      await tx.passwordResetToken.update({
+        where: { id: token.id },
+        data: { usedAt: new Date() },
+      });
+    });
+    // Sessões antigas caem: quem redefiniu é o único dono das novas credenciais.
+    await this.tokens.revokeAllForUser(user.id);
+    await this.audit.log({ userId: user.id, action: 'auth.password_reset_completed', correlationId });
+  }
+
+  private resetCodeHash(userId: string, code: string): string {
+    return sha256(`pwreset:${userId}:${code}`);
   }
 
   refresh(refreshToken: string): Promise<AuthTokens> {

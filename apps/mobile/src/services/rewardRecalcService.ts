@@ -1,14 +1,19 @@
 import {
+  ATTRIBUTE_REWARD_CALCULATION_VERSION,
   computeDayRewards,
   getWeekBounds,
+  type AdariAttributeProgress,
   type AttributeChanges,
+  type AttributeSet,
   type DayActivity,
   type DayActivityReward,
 } from '@ad-sidera/shared';
 import { getDatabase } from '../db/database';
 import type { CreatureState, WeeklyProgressRecord } from '../db/models';
 import { activityRepository } from '../db/repositories/activityRepository';
+import { attributeStateRepository } from '../db/repositories/attributeStateRepository';
 import { creatureRepository } from '../db/repositories/creatureRepository';
+import { levelUpRewardRepository } from '../db/repositories/levelUpRewardRepository';
 import { weeklyGoalRepository } from '../db/repositories/weeklyGoalRepository';
 import { weeklyProgressRepository } from '../db/repositories/weeklyProgressRepository';
 import type { SqlDatabase } from '../db/types';
@@ -16,6 +21,7 @@ import {
   applyRewardDeltas,
   ATTRIBUTE_KEYS,
   isEvolutionAvailableFor,
+  levelUpAttributeGains,
   type RewardDelta,
 } from '../domain/creatureAggregate';
 import { recomputeWeekProgress } from '../domain/localProgress';
@@ -30,6 +36,14 @@ export interface RecalcResult {
   leveledUp: boolean;
   evolutionAvailable: boolean;
   rewardByActivityId: Map<string, DayActivityReward>;
+  /** Progresso de treino por atributo APÓS o recálculo (para a tela de recompensa). */
+  attributeProgress: AdariAttributeProgress[];
+  /** Ganhos concedidos pela subida de nível (vazio quando não subiu). */
+  levelUpGains: AttributeChanges;
+  /** Atributos antes do level-up, para mostrar "10 → 11" na celebração. */
+  previousAttributes: AttributeSet | null;
+  /** Nível antes do recálculo (a celebração cobre saltos de mais de um nível). */
+  previousLevel: number | null;
 }
 
 function accumulateAttributeDelta(
@@ -118,10 +132,22 @@ export async function recalcDay(
   let updated: CreatureState | null = creature;
   let leveledUp = false;
   let evolutionAvailable = false;
+  let trainingTotals: AttributeChanges = {};
+  let attributeProgress: AdariAttributeProgress[] = [];
+  let levelUpGains: AttributeChanges = {};
+  let previousAttributes: AttributeSet | null = null;
   if (creature) {
+    const currentTotals = await attributeStateRepository.trainingTotals(db, creature.id);
     const delta: RewardDelta = { xpDelta, energyDelta, attributeDeltas, totalActivities };
-    updated = applyRewardDeltas(creature, delta, now);
+    const applied = applyRewardDeltas(creature, currentTotals, delta, now);
+    updated = applied.creature;
+    trainingTotals = applied.trainingTotals;
+    attributeProgress = applied.progress;
     leveledUp = updated.level > creature.level;
+    if (leveledUp) {
+      previousAttributes = creature.attributes;
+      levelUpGains = levelUpAttributeGains(creature.level, updated.level);
+    }
     evolutionAvailable = isEvolutionAvailableFor(updated, weeksGoalMet);
   }
 
@@ -146,6 +172,20 @@ export async function recalcDay(
     }
     if (updated) {
       await creatureRepository.update(db, updated);
+      await attributeStateRepository.setTrainingTotals(db, updated.id, trainingTotals, now);
+      if (leveledUp && creature) {
+        // Histórico da celebração — único por nível alcançado (idempotente).
+        await levelUpRewardRepository.record(db, {
+          id: uuidv4(),
+          userAdariId: updated.id,
+          fromLevel: creature.level,
+          toLevel: updated.level,
+          attributeGains: levelUpGains,
+          operationId: `level-up:${updated.id}:${updated.level}`,
+          calculationVersion: ATTRIBUTE_REWARD_CALCULATION_VERSION,
+          createdAt: now,
+        });
+      }
       await enqueueOperation(db, {
         entityType: 'user_creature',
         entityId: updated.id,
@@ -159,5 +199,15 @@ export async function recalcDay(
   else await db.withTransactionAsync(persist);
 
   const weeklyProgress = await recomputeWeekFor(db, occurredAtIso, timezone);
-  return { creature: updated, weeklyProgress, leveledUp, evolutionAvailable, rewardByActivityId };
+  return {
+    creature: updated,
+    weeklyProgress,
+    leveledUp,
+    evolutionAvailable,
+    rewardByActivityId,
+    attributeProgress,
+    levelUpGains,
+    previousAttributes,
+    previousLevel: creature?.level ?? null,
+  };
 }

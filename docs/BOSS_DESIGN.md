@@ -48,7 +48,7 @@ Cada chefe é o 5º adversário da região (`order: 5`, `difficultyType: 'boss'`
 
 - Duração-alvo de batalha de chefe: **8–14 turnos** (`BATTLE_DURATION_TURNS.boss = [8, 14]`) — mais longa que comum (3–6) e elite (5–8), para dar espaço aos ciclos de telegrafado/fase.
 - **Determinístico**: a pequena variância de dano e os desempates vêm da `seed` + cursor (não de `Math.random`); críticos aleatórios estão desligados. A retentativa preserva a seed-base do inimigo.
-- Quando o golpe anunciado está carregado, o jogador age antes dele independentemente da velocidade. Defender no timing correto reduz 65%, atordoa o chefe e abre uma janela de vulnerabilidade.
+- Quando o golpe anunciado está carregado, o jogador age antes dele independentemente da velocidade. Defender no timing correto reduz 70% (valor canônico `BATTLE.DEFEND_MITIGATION = 0.3` em `packages/shared/src/constants.ts`), atordoa o chefe e abre uma janela de vulnerabilidade.
 
 ## Recompensa (valor do chefe)
 

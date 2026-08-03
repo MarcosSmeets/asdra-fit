@@ -47,10 +47,11 @@ Fluxos em `apps/mobile/.maestro/` — **exigem device/emulador** com o app rodan
 cd apps/mobile
 maestro test .maestro/01-local-onboarding.yaml     # modo local → onboarding → criatura
 maestro test .maestro/02-register-activity.yaml     # registrar atividade → XP → diário
-maestro test .maestro/03-battle-and-league.yaml     # batalha offline → jornada → liga
+maestro test .maestro/03-journey-battle-evolution.yaml # jornada → batalha → linha evolutiva
 ```
 
-O fluxo 03 exige o backend no ar (`pnpm dev:api`) e o app apontando via `EXPO_PUBLIC_API_URL`. Alguns passos usam `optional: true` por conta da variância de batalha.
+Os três fluxos do RC são offline e rodam com `EXPO_PUBLIC_ENABLE_ONLINE_FEATURES=false`.
+Alguns passos usam `optional: true` por conta da variância de batalha.
 
 ## Configurações de teste
 

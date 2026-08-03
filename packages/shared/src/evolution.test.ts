@@ -22,6 +22,7 @@ const req: EvolutionRequirements = {
   minLevel: 10,
   minWeeksGoalMet: 3,
   minActivities: 20,
+  minBond: 10,
   affinityAttribute: 'strength',
   affinityThreshold: 20,
   campaignMilestone: 'r1-boss',
@@ -31,6 +32,7 @@ const progress = (over: Partial<EvolutionProgress> = {}): EvolutionProgress => (
   level: 10,
   weeksGoalMet: 3,
   totalActivities: 20,
+  bond: 10,
   attributes: attrs(),
   defeatedMilestones: ['r1-boss'],
   ...over,
@@ -51,6 +53,15 @@ describe('evolution', () => {
 
   it('indisponível quando afinidade abaixo do limiar', () => {
     expect(isEvolutionAvailable(progress({ attributes: attrs({ strength: 19 }) }), req)).toBe(false);
+  });
+
+  it('indisponível quando falta Vínculo', () => {
+    expect(isEvolutionAvailable(progress({ bond: 9 }), req)).toBe(false);
+  });
+
+  it('afinidade não é exigida quando o estágio não pede (affinityAttribute null)', () => {
+    const semAfinidade = { ...req, affinityAttribute: null };
+    expect(isEvolutionAvailable(progress({ attributes: attrs({ strength: 0 }) }), semAfinidade)).toBe(true);
   });
 
   it('não depende apenas do nível (spec §9)', () => {

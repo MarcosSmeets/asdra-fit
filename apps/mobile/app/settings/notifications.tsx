@@ -1,10 +1,14 @@
 import { Stack, useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Pressable, Switch, View, type ViewStyle } from 'react-native';
 import { ISO_WEEKDAYS } from '@ad-sidera/shared';
-import { Button, Card, Chip, Screen, SectionHeader, Text } from '@/components';
+import { Button, Card, Chip, LoadingState, Screen, SectionHeader, Text } from '@/components';
 import { WEEKDAY_LABELS } from '@/constants/labels';
-import { cancelAllReminders, scheduleWeeklyReminders } from '@/services/notificationService';
+import {
+  cancelAllReminders,
+  loadActivityReminderConfig,
+  scheduleWeeklyReminders,
+} from '@/services/notificationService';
 import { useTheme } from '@/theme/ThemeProvider';
 
 function toggleValue<T>(list: readonly T[], item: T): T[] {
@@ -111,43 +115,60 @@ export default function NotificationSettings(): React.ReactElement {
   const theme = useTheme();
   const router = useRouter();
 
-  // MVP: apenas o "Lembrete de atividade" é realmente agendado via scheduleWeeklyReminders.
-  // As demais preferências por tipo (Meta semanal, Evolução, Liga) são apenas de UI por
-  // enquanto — persisti-las e conectá-las a notificações específicas é um follow-up documentado.
-  const [activityReminder, setActivityReminder] = useState(true);
-  const [weeklyGoal, setWeeklyGoal] = useState(true);
-  const [evolution, setEvolution] = useState(true);
-  const [league, setLeague] = useState(true);
+  const [activityReminder, setActivityReminder] = useState(false);
   const [hour, setHour] = useState(18);
   const [days, setDays] = useState<number[]>([1, 2, 3, 4, 5]);
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const allEnabled = activityReminder && weeklyGoal && evolution && league;
-
-  const setAll = (next: boolean): void => {
-    setActivityReminder(next);
-    setWeeklyGoal(next);
-    setEvolution(next);
-    setLeague(next);
-  };
+  useEffect(() => {
+    let mounted = true;
+    void loadActivityReminderConfig()
+      .then((config) => {
+        if (!mounted) return;
+        setActivityReminder(config.enabled);
+        setHour(config.hour);
+        setDays(config.weekdays);
+      })
+      .catch(() => {
+        if (mounted) setError('Não foi possível carregar o lembrete local.');
+      })
+      .finally(() => {
+        if (mounted) setLoading(false);
+      });
+    return () => { mounted = false; };
+  }, []);
 
   const save = async (): Promise<void> => {
     setSaving(true);
+    setError(null);
     try {
       if (activityReminder) {
-        await scheduleWeeklyReminders({
+        const granted = await scheduleWeeklyReminders({
           hour,
           minute: 0,
           weekdays: days.length > 0 ? days : [1, 2, 3, 4, 5],
         });
+        if (!granted) {
+          setActivityReminder(false);
+          setError('A permissão de notificações foi negada. Você pode reativá-la nos ajustes do sistema.');
+          return;
+        }
       } else {
         await cancelAllReminders();
       }
       router.back();
     } catch {
+      setError('Não foi possível salvar o lembrete. Tente novamente.');
+    } finally {
       setSaving(false);
     }
   };
+
+  if (loading) {
+    return <Screen><LoadingState label="Carregando lembrete…" /></Screen>;
+  }
 
   return (
     <Screen scroll>
@@ -158,36 +179,10 @@ export default function NotificationSettings(): React.ReactElement {
       />
 
       <ToggleRow
-        title="Ativar tudo"
-        description="Liga ou desliga todos os lembretes de uma vez."
-        value={allEnabled}
-        onValueChange={setAll}
-      />
-
-      <SectionHeader title="Por tipo" />
-      <ToggleRow
         title="Lembrete de atividade"
         description="Um empurrãozinho gentil nos dias escolhidos."
         value={activityReminder}
         onValueChange={setActivityReminder}
-      />
-      <ToggleRow
-        title="Meta semanal"
-        description="Resumo do seu progresso na semana."
-        value={weeklyGoal}
-        onValueChange={setWeeklyGoal}
-      />
-      <ToggleRow
-        title="Evolução"
-        description="Quando seu Adari evolui."
-        value={evolution}
-        onValueChange={setEvolution}
-      />
-      <ToggleRow
-        title="Liga"
-        description="Novidades da sua liga entre amigos."
-        value={league}
-        onValueChange={setLeague}
       />
 
       {activityReminder && (
@@ -219,6 +214,17 @@ export default function NotificationSettings(): React.ReactElement {
           </View>
         </Card>
       )}
+
+      {error ? (
+        <Card>
+          <Text variant="label" color="error" accessibilityLiveRegion="assertive">
+            {error}
+          </Text>
+          <Text variant="caption" color="textMuted">
+            Ajuste as opções, se necessário, e toque em Salvar para tentar novamente.
+          </Text>
+        </Card>
+      ) : null}
 
       <Button
         label="Salvar"

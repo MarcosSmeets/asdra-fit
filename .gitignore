@@ -15,6 +15,7 @@ apps/mobile/android/
 apps/mobile/ios/
 apps/mobile/dist-android/
 apps/mobile/dist-ios/
+apps/mobile/dist-ci/
 *.orig.*
 web-build/
 

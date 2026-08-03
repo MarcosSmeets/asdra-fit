@@ -7,6 +7,11 @@ export interface CardProps extends ViewProps {
   variant?: 'surface' | 'surfaceAlt';
 }
 
+/**
+ * Cartão legado com pele pixel (borda dura, canto quase reto). Para o visual
+ * completo 32-bit (recorte + sombra) prefira PixelPanel/PixelCard — este
+ * componente permanece porque aplica o estilo no MESMO View dos filhos.
+ */
 export function Card({
   padded = true,
   variant = 'surface',
@@ -19,8 +24,8 @@ export function Card({
       style={[
         {
           backgroundColor: theme.colors[variant],
-          borderRadius: theme.radius.lg,
-          borderWidth: 1,
+          borderRadius: theme.radius.sm,
+          borderWidth: theme.pixelUnit / 2,
           borderColor: theme.colors.border,
           padding: padded ? theme.spacing.lg : 0,
         },

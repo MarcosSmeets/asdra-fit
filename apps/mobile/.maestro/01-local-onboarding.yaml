@@ -16,13 +16,28 @@ appId: app.adsidera.mobile
 - tapOn: 'Continuar'
 - tapOn: 'Criar constância'
 - tapOn: 'Continuar'
-- tapOn: 'Continuar' # meta padrão
 - tapOn: 'Musculação'
 - tapOn: 'Continuar'
+- assertVisible: 'Sua meta semanal'
+- tapOn: 'Continuar' # meta padrão
 - tapOn: 'Continuar' # dias
+- assertVisible: 'Como é seu Explorador?'
+- tapOn: 'Continuar' # avatar padrão
+- assertVisible: 'Lembretes gentis'
 - tapOn: 'Continuar' # notificações
+- assertVisible: 'Escolha seu primeiro Adari'
 - tapOn: 'Terravok'
 - tapOn: 'Continuar'
+- assertVisible: 'Tudo pronto!'
 - tapOn: 'Concluir'
+# Guia pós-onboarding
+- assertVisible: 'Treine no mundo real'
+- tapOn: 'Continuar'
+- assertVisible: 'XP e treino viram progresso'
+- tapOn: 'Continuar'
+- assertVisible: 'Cuide e siga pela Jornada'
+- tapOn: 'Continuar'
+- assertVisible: 'Evolução exige constância'
+- tapOn: 'Ir para Meu Adari'
 # Área principal
 - assertVisible: 'Registrar atividade'

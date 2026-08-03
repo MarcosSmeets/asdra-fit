@@ -12,6 +12,7 @@ module.exports = {
   moduleNameMapper: {
     '^@ad-sidera/config$': '<rootDir>/../../packages/config/src/index.ts',
     '^@/(.*)$': '<rootDir>/src/$1',
+    '\\.(png|jpg|jpeg|gif|webp)$': '<rootDir>/jest.assetStub.js',
   },
   transform: {
     '^.+\\.ts$': [

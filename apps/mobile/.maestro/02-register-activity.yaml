@@ -16,3 +16,4 @@ appId: app.adsidera.mobile
 # Diário deve conter o registro
 - tapOn: 'Diário'
 - assertVisible: 'Musculação'
+- assertNotVisible: 'Liga'

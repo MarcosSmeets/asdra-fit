@@ -1,51 +1,55 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { View } from 'react-native';
+import { Image, View } from 'react-native';
 import type { AdariVisualState } from '../../features/my-adari/state';
+import { resolveAdariManifest, resolveVisualState } from '../../content/adari';
 import { AtlasFrame } from '../sprites/AtlasFrame';
-import { CharacterSprite } from '../characters/CharacterSprite';
-import { safeAdariAtlasColumn } from './adariActionSpriteFrames';
+import { adariSpriteSequence, safeAdariAtlasColumn } from './adariActionSpriteFrames';
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const ADARI_ACTION_ATLAS = require('../../../assets/adaris/sheets/adari-action-atlas-v2.png');
+export { adariSpriteSequence } from './adariActionSpriteFrames';
 
-const ROW_BY_CREATURE: Record<string, number> = { terravok: 0, lumora: 1, solivar: 2 };
-const SEQUENCES: Record<AdariVisualState, readonly number[]> = {
-  idle: [0, 1, 0, 1], happy: [0, 2, 2, 1], curious: [0, 1, 2, 1],
-  receivingAffection: [0, 2, 2, 1], eating: [0, 3, 3, 1], refusingFood: [3, 0, 1],
-  talkingReaction: [0, 1, 2, 1], resting: [0, 4, 4], sleeping: [4], wakingUp: [4, 0, 1],
-  tired: [4, 0], excitedAfterActivity: [0, 2, 1, 2], askingForWalk: [0, 1, 5, 1],
-  battleReady: [5, 0, 5, 1], attacking: [5, 6, 6, 5], defending: [0, 5, 5],
-  takingDamage: [5, 7, 5], victory: [5, 2, 2, 1], defeat: [7, 4],
-};
-
-export function adariSpriteSequence(state: AdariVisualState): readonly number[] {
-  return SEQUENCES[state] ?? SEQUENCES.idle;
+export interface AdariActionSpriteProps {
+  creatureKey: string;
+  state: AdariVisualState;
+  size: number;
+  /** Estágio evolutivo persistido (0..3). Ausente: deriva de `evolved`. */
+  stage?: number;
+  /** @deprecated Compat Build 4 (evoluído = EV 1). Prefira `stage`. */
+  evolved?: boolean;
+  /** Pose fixa (coluna do atlas). Ignora a sequência do estado — usado em retratos. */
+  frame?: number;
+  reduceMotion?: boolean;
+  accessibilityLabel?: string;
 }
 
-export function AdariActionSprite({ creatureKey, state, size, evolved = false,
-  reduceMotion = false, accessibilityLabel }: { creatureKey: string; state: AdariVisualState;
-  size: number; evolved?: boolean; reduceMotion?: boolean; accessibilityLabel?: string }): React.ReactElement {
-  const sequence = useMemo(() => adariSpriteSequence(state), [state]);
+export function AdariActionSprite({ creatureKey, state, size, stage,
+  evolved = false, frame, reduceMotion = false, accessibilityLabel }: AdariActionSpriteProps): React.ReactElement {
+  const stageInt = stage ?? (evolved ? 1 : 0);
+  const manifest = useMemo(() => resolveAdariManifest(creatureKey, stageInt), [creatureKey, stageInt]);
+  const resolvedState = resolveVisualState(manifest, state);
+  const sequence = useMemo(() => adariSpriteSequence(resolvedState), [resolvedState]);
   const [index, setIndex] = useState(0);
+  const still = reduceMotion || frame !== undefined;
   useEffect(() => {
     setIndex(0);
-    if (reduceMotion || sequence.length < 2) return undefined;
+    if (still || sequence.length < 2) return undefined;
     const interval = setInterval(() => setIndex((value) => (value + 1) % sequence.length),
-      state === 'idle' || state === 'sleeping' ? 620 : 180);
+      resolvedState === 'idle' || resolvedState === 'sleeping' ? 620 : 180);
     return () => clearInterval(interval);
-  }, [reduceMotion, sequence, state]);
-  const row = ROW_BY_CREATURE[creatureKey] ?? ROW_BY_CREATURE.solivar!;
-  const fallbackKind = creatureKey === 'terravok' || creatureKey === 'lumora' ? creatureKey : 'solivar';
+  }, [still, sequence, resolvedState]);
+  const rawColumn = frame ?? sequence[index] ?? sequence[0] ?? 0;
+  const column = manifest.atlas.applyLegacyColumnSafety
+    ? safeAdariAtlasColumn(creatureKey, rawColumn)
+    : rawColumn;
+  // Fallback é a silhueta do próprio estágio: o lineup legado tinha fundo chroma.
+  // Sem placa nem aura atrás do sprite: iluminação é camada da CENA
+  // (EnvironmentalGlow). Aqui só sai o recorte transparente do atlas.
   return (
     <View style={{ width: size, height: size }}>
-      {evolved ? <View style={{ position: 'absolute', inset: size * 0.08, borderRadius: 999,
-        backgroundColor: 'rgba(232,192,112,0.18)' }} /> : null}
-      <AtlasFrame source={ADARI_ACTION_ATLAS} columns={8} rows={3}
-        column={safeAdariAtlasColumn(creatureKey, sequence[index] ?? sequence[0] ?? 0)}
-        row={row} size={size} atlasAspectRatio={8 / 3}
+      <AtlasFrame source={manifest.atlas.source} columns={manifest.atlas.columns} rows={manifest.atlas.rows}
+        column={column} row={manifest.atlas.row} size={size} atlasAspectRatio={manifest.atlas.aspectRatio}
         accessibilityLabel={accessibilityLabel}
-        onErrorFallback={<CharacterSprite kind={fallbackKind} size={size}
-          accessibilityLabel={accessibilityLabel ?? 'Adari'} />} />
+        onErrorFallback={<Image source={manifest.silhouette} style={{ width: size, height: size }}
+          resizeMode="contain" accessibilityLabel={accessibilityLabel ?? 'Adari'} />} />
     </View>
   );
 }

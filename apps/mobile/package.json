@@ -7,6 +7,8 @@
     "dev": "expo start",
     "android": "expo run:android",
     "ios": "expo run:ios",
+    "export:android": "expo export --platform android --output-dir dist-ci/android",
+    "export:ios": "expo export --platform ios --output-dir dist-ci/ios",
     "lint": "eslint \"src/**/*.{ts,tsx}\" \"app/**/*.{ts,tsx}\"",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "jest --passWithNoTests"
@@ -14,8 +16,8 @@
   "dependencies": {
     "@ad-sidera/config": "workspace:*",
     "@ad-sidera/shared": "workspace:*",
-    "@expo-google-fonts/cormorant": "^0.4.2",
     "@expo-google-fonts/inter": "^0.4.2",
+    "@expo-google-fonts/pixelify-sans": "^0.4.2",
     "@hookform/resolvers": "^3.9.1",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-native-community/netinfo": "11.4.1",
@@ -30,6 +32,7 @@
     "expo-notifications": "~0.32.17",
     "expo-router": "~6.0.24",
     "expo-secure-store": "~15.0.8",
+    "expo-sensors": "~15.0.8",
     "expo-sqlite": "~16.0.10",
     "expo-status-bar": "~3.0.9",
     "luxon": "^3.5.0",

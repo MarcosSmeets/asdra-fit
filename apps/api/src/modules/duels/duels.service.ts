@@ -15,6 +15,7 @@ import {
 } from '@ad-sidera/shared';
 import type { Prisma, UserCreature } from '@prisma/client';
 import { randomInt } from 'node:crypto';
+import { PushService } from '../notifications/push.service';
 import { PrismaService } from '../../prisma/prisma.service';
 
 interface OpponentDisplay {
@@ -27,7 +28,10 @@ interface OpponentDisplay {
 
 @Injectable()
 export class DuelsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly push: PushService,
+  ) {}
 
   private attributesOf(creature: UserCreature): AttributeSet {
     return {
@@ -179,6 +183,13 @@ export class DuelsService {
         opponentSnapshot: opponentCombatant as unknown as Prisma.InputJsonValue,
         vigorSpent: cost,
       },
+    });
+
+    // Best-effort: o resultado do duelo não espera nem depende do push.
+    void this.push.sendLeagueNotice(opponentUserId, {
+      title: 'Duelo amistoso!',
+      body: `${challengerProfile?.displayName ?? 'Um amigo da liga'} desafiou seu Adari para um duelo. Veja como foi!`,
+      data: { type: 'duel', duelId: duel.id },
     });
 
     return {

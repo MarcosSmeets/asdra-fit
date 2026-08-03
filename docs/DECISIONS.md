@@ -71,6 +71,7 @@ Registro das decisões que moldaram o Ad Sidera. Cada uma explica **o quê** e *
 
 **Decisão:** interface de analytics desacoplada, implementação _no-op_, desligada por padrão.
 **Por quê:** privacidade. Nada invasivo é coletado; se um dia houver telemetria, será opt-in e por trás de uma interface trocável.
+**Atualização (2026-07-23):** implementados os "insights locais" opt-in (`apps/mobile/src/services/analyticsService.ts`): eventos ficam apenas no SQLite do aparelho, desligados por padrão; desativar apaga o histórico. Nenhum envio remoto existe.
 
 ## DEC-15 — Domínio pronto para PvP (sem PvP em rede)
 

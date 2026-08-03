@@ -8,7 +8,7 @@ export interface BattleVisualFeedback {
   blockedDamage: number;
 }
 
-/** MantÃ©m nÃºmero flutuante, escudo e histÃ³rico derivados do mesmo evento do motor. */
+/** Mantém número flutuante, escudo e histórico derivados do mesmo evento do motor. */
 export function battleVisualFeedback(
   events: readonly BattleEvent[],
   seq: number,
@@ -21,7 +21,7 @@ export function battleVisualFeedback(
   return { seq, attacker: event.side, damage, rawDamage, blockedDamage };
 }
 
-/** Um round pode conter a aÃ§Ã£o do jogador e a resposta inimiga. */
+/** Um round pode conter a ação do jogador e a resposta inimiga. */
 export function battleVisualFeedbackSequence(
   events: readonly BattleEvent[],
   sequenceBase: number,

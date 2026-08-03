@@ -1,10 +1,11 @@
 import { registerSchema } from '@ad-sidera/shared';
-import { useRouter } from 'expo-router';
+import { Redirect, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { registerAccount } from '@/api/auth';
 import { ApiError } from '@/api/client';
 import { Button, Input, Screen, Text } from '@/components';
+import { ONLINE_FEATURES_ENABLED } from '@/config/features';
 import { useSessionStore } from '@/stores/sessionStore';
 import { useTheme } from '@/theme/ThemeProvider';
 import {
@@ -15,6 +16,7 @@ import {
   type LocalConversionState,
 } from '@/services/localAccountConversion';
 import { fullAccountSync } from '@/sync/syncEngine';
+import { entryRouteForProgress } from '@/domain/userProgress';
 
 function getDeviceTimezone(): string {
   try {
@@ -29,7 +31,7 @@ interface FieldErrors {
   password?: string;
 }
 
-export default function Register(): React.ReactElement {
+function Register(): React.ReactElement {
   const theme = useTheme();
   const router = useRouter();
 
@@ -82,8 +84,8 @@ export default function Register(): React.ReactElement {
         await fullAccountSync();
         await useSessionStore.getState().refreshProgress(user.hasCreature);
       }
-      const { progress } = useSessionStore.getState();
-      router.replace(progress.hasCompletedOnboarding ? '/(tabs)' : '/onboarding');
+      const { mode: sessionMode, progress, tutorialCompleted } = useSessionStore.getState();
+      router.replace(entryRouteForProgress(true, sessionMode, progress, tutorialCompleted));
     } catch (error) {
       if (error instanceof ApiError) {
         setFormError(
@@ -198,4 +200,9 @@ export default function Register(): React.ReactElement {
       </View>
     </Screen>
   );
+}
+
+export default function RegisterRoute(): React.ReactElement {
+  if (!ONLINE_FEATURES_ENABLED) return <Redirect href="/" />;
+  return <Register />;
 }

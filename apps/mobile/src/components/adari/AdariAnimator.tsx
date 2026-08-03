@@ -1,7 +1,7 @@
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Animated, StyleSheet, View, type GestureResponderEvent } from 'react-native';
-import { getAdariBehaviorProfile } from '@ad-sidera/shared';
 import { useReducedMotion } from '../../theme/ThemeProvider';
+import { pixelPalette } from '../../theme/tokens';
 import { adariMotionFor, spriteAnimationFor } from '../../features/my-adari/animationCatalog';
 import type { AdariVisualState } from '../../features/my-adari/state';
 import { AdariActionSprite } from './AdariActionSprite';
@@ -10,6 +10,9 @@ export interface AdariAnimatorProps {
   creatureKey: string;
   state: AdariVisualState;
   size: number;
+  /** Estágio evolutivo persistido (0..3). Ausente: deriva de `evolved`. */
+  stage?: number;
+  /** @deprecated Compat Build 4 (evoluído = EV 1). Prefira `stage`. */
   evolved?: boolean;
   interactionEnabled?: boolean;
   onAffectionGesture?: () => void;
@@ -21,6 +24,7 @@ export function AdariAnimator({
   creatureKey,
   state,
   size,
+  stage,
   evolved = false,
   interactionEnabled = false,
   onAffectionGesture,
@@ -29,13 +33,11 @@ export function AdariAnimator({
 }: AdariAnimatorProps): React.ReactElement {
   const osReducedMotion = useReducedMotion();
   const reduced = reduceMotion || osReducedMotion;
-  const profile = useMemo(() => getAdariBehaviorProfile(creatureKey), [creatureKey]);
   const scale = useRef(new Animated.Value(1)).current;
   const translateX = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(0)).current;
   const rotate = useRef(new Animated.Value(0)).current;
   const glow = useRef(new Animated.Value(0.16)).current;
-  const blink = useRef(new Animated.Value(1)).current;
   const gestureStarted = useRef(false);
 
   useEffect(() => {
@@ -59,19 +61,13 @@ export function AdariAnimator({
       return undefined;
     }
 
-    let animation: Animated.CompositeAnimation;
+    // idle é estático (decisão pós-Build 5): nenhum loop; animação só nas ações.
     if (state === 'idle') {
-      animation = Animated.loop(Animated.sequence([
-        Animated.parallel([
-          Animated.timing(scale, { toValue: 1.025, duration: 1100, useNativeDriver: true }),
-          Animated.timing(translateY, { toValue: -4, duration: 1100, useNativeDriver: true }),
-        ]),
-        Animated.parallel([
-          Animated.timing(scale, { toValue: 1, duration: 1100, useNativeDriver: true }),
-          Animated.timing(translateY, { toValue: 0, duration: 1100, useNativeDriver: true }),
-        ]),
-      ]));
-    } else if (['happy', 'excitedAfterActivity', 'victory'].includes(state)) {
+      return undefined;
+    }
+
+    let animation: Animated.CompositeAnimation;
+    if (['happy', 'excitedAfterActivity', 'victory'].includes(state)) {
       animation = Animated.sequence([
         Animated.timing(scale, { toValue: 0.96, duration: motion.anticipationMs, useNativeDriver: true }),
         Animated.parallel([
@@ -170,17 +166,6 @@ export function AdariAnimator({
     return () => animation.stop();
   }, [creatureKey, glow, reduced, rotate, scale, state, translateX, translateY]);
 
-  useEffect(() => {
-    if (reduced || state !== 'idle') return undefined;
-    const blinkLoop = Animated.loop(Animated.sequence([
-      Animated.delay(2200 + Math.round(profile.curiosityLevel * 900)),
-      Animated.timing(blink, { toValue: 0.965, duration: 65, useNativeDriver: true }),
-      Animated.timing(blink, { toValue: 1, duration: 85, useNativeDriver: true }),
-    ]));
-    blinkLoop.start();
-    return () => blinkLoop.stop();
-  }, [blink, profile.curiosityLevel, reduced, state]);
-
   const startGesture = (_event: GestureResponderEvent): void => {
     if (!interactionEnabled || gestureStarted.current) return;
     gestureStarted.current = true;
@@ -209,15 +194,16 @@ export function AdariAnimator({
       onResponderTerminate={endGesture}
       style={{ width: size, height: size, alignItems: 'center', justifyContent: 'flex-end' }}
     >
-      <Animated.View pointerEvents="none" style={[styles.glow, { width: size * 0.74, height: size * 0.3, opacity: glow }]} />
+      <Animated.View pointerEvents="none" style={[styles.contactLight, { width: size * 0.5, opacity: glow }]} />
       <Animated.View
         pointerEvents="none"
-        style={{ transform: [{ translateX }, { translateY }, { rotate: degrees }, { scale }, { scaleY: blink }] }}
+        style={{ transform: [{ translateX }, { translateY }, { rotate: degrees }, { scale }] }}
       >
         <AdariActionSprite
           creatureKey={creatureKey}
           state={state}
           size={size}
+          stage={stage}
           evolved={evolved}
           reduceMotion={reduced}
           accessibilityLabel={accessibilityLabel}
@@ -228,10 +214,15 @@ export function AdariAnimator({
 }
 
 const styles = StyleSheet.create({
-  glow: {
+  /**
+   * Luz de CONTATO: faixa baixa e larga junto ao chão, que reage às ações
+   * (carinho, defesa). Não é um disco atrás do corpo — placas atrás do sprite
+   * saíram no Build 6; a iluminação de ambiente pertence à cena.
+   */
+  contactLight: {
     position: 'absolute',
-    bottom: '4%',
-    borderRadius: 999,
-    backgroundColor: '#F4D88A',
+    bottom: '2%',
+    height: 4,
+    backgroundColor: pixelPalette.stellar.lightGold,
   },
 });

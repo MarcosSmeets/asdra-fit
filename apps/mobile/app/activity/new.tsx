@@ -18,6 +18,7 @@ import {
 import { BRAND } from '@/constants/brand';
 import { ACTIVITY_LABELS, INTENSITY_LABELS, MOOD_LABELS } from '@/constants/labels';
 import { previewReward, type RegisterActivityResult } from '@/services/activityService';
+import { collectMovementSignal } from '@/services/movementSignalService';
 import { deletePrivatePhoto, storePrivatePhoto } from '@/services/photoService';
 import { useGameStore } from '@/stores/gameStore';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -171,6 +172,12 @@ export default function NewActivityScreen(): React.ReactElement {
     setSubmitting(true);
     setError(null);
     try {
+      // Sinal informativo do pedômetro (processado só no aparelho); nunca bloqueia o registro.
+      const movement = await collectMovementSignal({
+        activityType,
+        occurredAt: occurredAtIso,
+        durationMinutes: duration,
+      });
       const res = await useGameStore.getState().register({
         activityType,
         perceivedIntensity: intensity,
@@ -181,6 +188,8 @@ export default function NewActivityScreen(): React.ReactElement {
         moodBefore: moodBefore ?? undefined,
         moodAfter: moodAfter ?? undefined,
         localPhotoUri: localPhotoUri ?? undefined,
+        movementSteps: movement.steps,
+        movementSignal: movement.signal,
       });
       setResult(res);
     } catch (e) {
@@ -407,13 +416,18 @@ export default function NewActivityScreen(): React.ReactElement {
             <RewardSummary
               creatureKey={creature.creatureKey}
               adariName={adariName}
-              evolved={creature.evolutionStage > 0}
+              stage={creature.evolutionStage}
               reward={result.reward}
               leveledUp={result.leveledUp}
               evolutionAvailable={result.evolutionAvailable}
               weeklyValid={result.weeklyProgress?.validActivityCount ?? 0}
               weeklyTarget={result.weeklyProgress?.targetCount ?? 0}
               currentStreak={streak?.currentStreak ?? 0}
+              attributeProgress={result.attributeProgress}
+              previousAttributes={result.previousAttributes}
+              newAttributes={result.newAttributes}
+              previousLevel={result.previousLevel ?? undefined}
+              newLevel={result.newLevel ?? undefined}
             />
             <Button
               label="Concluir"

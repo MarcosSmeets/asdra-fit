@@ -10,7 +10,7 @@ describe('resolveSessionMode', () => {
     expect(resolveSessionMode(null, true)).toBe('account');
   });
 
-  it('preserva escolha explÃ­cita pelo modo local', () => {
+  it('preserva escolha explícita pelo modo local', () => {
     expect(resolveSessionMode('local', true)).toBe('local');
   });
 });

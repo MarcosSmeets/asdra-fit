@@ -6,18 +6,27 @@ import { useTheme } from '../../theme/ThemeProvider';
 import { Text } from '../Text';
 import { ActivityRewardBadge } from './ActivityRewardBadge';
 
-function AttributeDeltas({ changes }: { changes: Record<string, number | undefined> }): React.ReactElement | null {
+/**
+ * Pontos de TREINO estimados por atributo. O rótulo diz "treino" de propósito:
+ * são pontos rumo ao próximo ponto de atributo, não o valor final do atributo.
+ */
+function TrainingPreview({ changes }: { changes: Record<string, number | undefined> }): React.ReactElement | null {
   const entries = Object.entries(changes).filter(([, v]) => typeof v === 'number' && v !== 0);
   if (entries.length === 0) {
     return null;
   }
   return (
-    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-      {entries.map(([key, value]) => (
-        <Text key={key} variant="label" color="brandTeal">
-          +{value} {ATTRIBUTE_LABELS[key] ?? key}
-        </Text>
-      ))}
+    <View style={{ gap: 2 }}>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+        {entries.map(([key, value]) => (
+          <Text key={key} variant="label" color="brandTeal">
+            +{value} {ATTRIBUTE_LABELS[key] ?? key}
+          </Text>
+        ))}
+      </View>
+      <Text variant="caption" color="textMuted">
+        Pontos de treino — a cada 100 o atributo sobe 1.
+      </Text>
     </View>
   );
 }
@@ -50,10 +59,10 @@ export function ActivityRewardPreview({ reward }: { reward: ActivityReward }): R
               +{reward.finalXp} XP
             </Text>
             <Text variant="body" color="brandTeal">
-              +{reward.finalEnergy} energia
+              +{reward.finalEnergy} Vigor
             </Text>
           </View>
-          <AttributeDeltas changes={reward.finalAttributeChanges} />
+          <TrainingPreview changes={reward.finalTrainingChanges} />
           <Text variant="caption" color="textMuted">
             {reward.countsTowardGoal
               ? 'Conta como o dia de hoje na sua meta semanal.'

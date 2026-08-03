@@ -40,7 +40,7 @@ describe('apiRequest authentication', () => {
     expect(fetchMock.mock.calls[1]?.[1]?.headers).toMatchObject({ Authorization: 'Bearer access-2' });
   });
 
-  it('falha localmente sem fazer request protegido quando nÃ£o existe credencial', async () => {
+  it('falha localmente sem fazer request protegido quando não existe credencial', async () => {
     mockTokenStore.getAccess.mockResolvedValue(null);
     mockTokenStore.getRefresh.mockResolvedValue(null);
 
@@ -70,10 +70,20 @@ describe('apiRequest authentication', () => {
     expect(fetchMock.mock.calls.slice(1).every(([, init]) => (init?.headers as Record<string, string>).Authorization === 'Bearer access-shared')).toBe(true);
   });
 
-  it('preserva credenciais em falha temporÃ¡ria do servidor de refresh', async () => {
+  it('servidor inalcançável vira erro explícito, não espera silenciosa', async () => {
+    mockTokenStore.getAccess.mockResolvedValue('access-1');
+    fetchMock.mockRejectedValue(new TypeError('Network request failed'));
+
+    await expect(apiRequest('/auth/me')).rejects.toMatchObject({
+      status: 503,
+      code: 'NETWORK_UNREACHABLE',
+    });
+  });
+
+  it('preserva credenciais em falha temporária do servidor de refresh', async () => {
     mockTokenStore.getAccess.mockResolvedValue(null);
     mockTokenStore.getRefresh.mockResolvedValue('refresh-1');
-    fetchMock.mockResolvedValue(response(503, { message: 'indisponÃ­vel' }));
+    fetchMock.mockResolvedValue(response(503, { message: 'indisponível' }));
 
     await expect(apiRequest('/sync/push', { method: 'POST', body: {} })).rejects.toMatchObject({
       status: 503,

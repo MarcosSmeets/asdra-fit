@@ -25,6 +25,15 @@ export async function storePrivatePhoto(sourceUri: string): Promise<string> {
   return target;
 }
 
+/** Remove o diretório inteiro de fotos privadas (wipe de dados locais). */
+export async function deleteAllPrivatePhotos(): Promise<void> {
+  try {
+    await FileSystem.deleteAsync(PRIVATE_DIR, { idempotent: true });
+  } catch {
+    // Best-effort: o diretório pode nunca ter sido criado.
+  }
+}
+
 export async function deletePrivatePhoto(uri: string | null): Promise<void> {
   if (!uri) {
     return;

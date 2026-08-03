@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { Animated, StyleSheet, Text } from 'react-native';
 import type { AdariVisualState } from './state';
 import { FoodSprite } from '../../components/foods/FoodSprite';
+import { pixelPalette } from '../../theme/tokens';
 
 export function HomeActionEffects({ state, enabled, reduceMotion, foodKey }: {
   state: AdariVisualState;
@@ -48,9 +49,9 @@ export function HomeActionEffects({ state, enabled, reduceMotion, foodKey }: {
 
 const styles = StyleSheet.create({
   effect: { position: 'absolute', top: '14%', alignSelf: 'center', zIndex: 4 },
-  sparkles: { color: '#F6D985', fontSize: 25, textShadowColor: '#F6D985', textShadowRadius: 8 },
-  talk: { top: '8%', right: '20%', borderRadius: 18, paddingHorizontal: 12, paddingVertical: 2, backgroundColor: 'rgba(247,241,231,0.9)' },
-  talkText: { color: '#17314A', fontSize: 20, fontWeight: '700' },
+  sparkles: { color: pixelPalette.stellar.lightGold, fontSize: 25, textShadowColor: pixelPalette.stellar.lightGold, textShadowRadius: 8 },
+  talk: { top: '8%', right: '20%', borderRadius: 18, paddingHorizontal: 12, paddingVertical: 2, backgroundColor: 'rgba(245,245,255,0.9)' },
+  talkText: { color: pixelPalette.feedback.inkOnLight, fontSize: 20, fontWeight: '700' },
   sleep: { right: '21%', top: '11%' },
-  sleepText: { color: '#DCE8F2', fontSize: 24, fontWeight: '700', textShadowColor: '#17314A', textShadowRadius: 5 },
+  sleepText: { color: pixelPalette.feedback.mist, fontSize: 24, fontWeight: '700', textShadowColor: pixelPalette.feedback.inkOnLight, textShadowRadius: 5 },
 });

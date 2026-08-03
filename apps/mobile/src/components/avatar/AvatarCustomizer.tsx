@@ -1,6 +1,7 @@
 import {
-  PLAYER_AVATAR_BODY_MODELS, PLAYER_AVATAR_HAIR_COLORS, PLAYER_AVATAR_HAIR_STYLES,
-  PLAYER_AVATAR_OUTFITS, PLAYER_AVATAR_SKIN_TONES, type PlayerAvatarAppearance,
+  PLAYER_AVATAR_ACCESSORIES, PLAYER_AVATAR_BODY_MODELS, PLAYER_AVATAR_HAIR_COLORS,
+  PLAYER_AVATAR_HAIR_STYLES, PLAYER_AVATAR_OUTFITS, PLAYER_AVATAR_SKIN_TONES,
+  type PlayerAvatarAppearance,
 } from '@ad-sidera/shared';
 import React from 'react';
 import { View } from 'react-native';
@@ -16,6 +17,7 @@ const LABELS: Record<string, string> = {
   short: 'Curto', swept: 'Preso', curly: 'Cacheado',
   midnight: 'Noturno', auburn: 'Cobre', golden: 'Dourado', silver: 'Prateado',
   astral: 'Astral', mist: 'Bruma', constellation: 'Constelação',
+  none: 'Nenhum', visor: 'Visor astral', starpin: 'Broche estelar', scarf: 'Cachecol cósmico',
 };
 
 function Options<T extends string>({ title, values, selected, onSelect }: {
@@ -50,6 +52,7 @@ export function AvatarCustomizer({ value, onChange, compact = false }: {
       <Options title="Cabelo" values={PLAYER_AVATAR_HAIR_STYLES} selected={value.hairStyleKey} onSelect={(v) => set('hairStyleKey', v)} />
       <Options title="Cor do cabelo" values={PLAYER_AVATAR_HAIR_COLORS} selected={value.hairColorKey} onSelect={(v) => set('hairColorKey', v)} />
       <Options title="Roupa" values={PLAYER_AVATAR_OUTFITS} selected={value.outfitKey} onSelect={(v) => set('outfitKey', v)} />
+      <Options title="Acessório" values={PLAYER_AVATAR_ACCESSORIES} selected={value.accessoryKey ?? 'none'} onSelect={(v) => set('accessoryKey', v)} />
     </View>
   );
 }

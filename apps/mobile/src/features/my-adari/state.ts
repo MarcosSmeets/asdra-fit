@@ -1,5 +1,7 @@
 export type AdariVisualState =
   | 'idle'
+  | 'blink'
+  | 'breathing'
   | 'happy'
   | 'curious'
   | 'talkingReaction'
@@ -17,7 +19,8 @@ export type AdariVisualState =
   | 'defending'
   | 'takingDamage'
   | 'victory'
-  | 'defeat';
+  | 'defeat'
+  | 'evolving';
 
 export type MyAdariScreenState =
   | 'loadingEssentialAssets'
@@ -68,9 +71,11 @@ export function visualStateForScreenState(state: MyAdariScreenState): AdariVisua
 
 export const ADARI_VISUAL_STATE_LABELS: Readonly<Record<AdariVisualState, string>> = {
   idle: 'Tranquilo',
+  blink: 'Tranquilo',
+  breathing: 'Tranquilo',
   happy: 'Feliz',
   curious: 'Curioso',
-  talkingReaction: 'Conversando com vocÃª',
+  talkingReaction: 'Conversando com você',
   receivingAffection: 'Recebendo carinho',
   eating: 'Aproveitando a refeição',
   refusingFood: 'Satisfeito',
@@ -86,4 +91,5 @@ export const ADARI_VISUAL_STATE_LABELS: Readonly<Record<AdariVisualState, string
   takingDamage: 'Reagindo ao golpe',
   victory: 'Celebrando a vitória',
   defeat: 'Recuperando o fôlego',
+  evolving: 'Evoluindo',
 };

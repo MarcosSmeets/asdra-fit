@@ -1,9 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import {
+  adariEvolutionSyncPayloadSchema,
   adariInteractionSyncPayloadSchema,
   applyFood,
   activitySyncPayloadSchema,
   battleSessionSyncPayloadSchema,
+  checkEvolution,
+  getStageDefinitionByInt,
   calculatePveWinReward,
   calculateBondReward,
   DURATION,
@@ -131,6 +134,8 @@ export class SyncService {
         return this.applyWeeklyGoal(userId, op);
       case 'user_creature':
         return this.applyUserCreature(userId, op);
+      case 'adari_evolution':
+        return this.applyAdariEvolution(userId, op);
       case 'battle_session':
         return this.applyBattleSession(userId, op);
       case 'adari_interaction':
@@ -190,6 +195,9 @@ export class SyncService {
       moodBefore: payload.moodBefore ?? null,
       moodAfter: payload.moodAfter ?? null,
       hasLocalPhoto: payload.hasLocalPhoto,
+      // Informativo: armazenado como fato, jamais entra no cálculo de recompensa.
+      movementSteps: payload.movementSteps ?? null,
+      movementSignal: payload.movementSignal ?? null,
     };
 
     if (existing) {
@@ -275,8 +283,10 @@ export class SyncService {
       level: existing?.level ?? 1,
       xp: existing?.xp ?? 0,
       // Única exceção de bootstrap: uma conversão pendente pode preservar a forma
-      // já alcançada no perfil local. Contas novas sempre começam na forma 0.
-      evolutionStage: existing?.evolutionStage ?? (conversion ? Math.max(0, Math.min(1, payload.evolutionStage)) : 0),
+      // já alcançada no perfil local (0..3). Contas novas sempre começam na forma 0.
+      // Fora da conversão, o estágio SÓ muda pela operação validada `adari_evolution`.
+      evolutionStage: existing?.evolutionStage ?? (conversion ? Math.max(0, Math.min(3, payload.evolutionStage)) : 0),
+      evolvedAt: existing?.evolvedAt ?? (conversion && payload.evolvedAt ? new Date(payload.evolvedAt) : null),
       strength: existing?.strength ?? definition.baseStats.strength,
       endurance: existing?.endurance ?? definition.baseStats.endurance,
       agility: existing?.agility ?? definition.baseStats.agility,
@@ -304,6 +314,113 @@ export class SyncService {
       create: data,
       update: data,
     });
+    return { progressionChanged: true };
+  }
+
+  /**
+   * Evolução de estágio (Build 5) — NUNCA confia no estágio enviado. Revalida
+   * no servidor: transição +1 (sem pulos/regressão), estágio de origem igual ao
+   * do servidor, requisitos recalculados a partir de fatos aceitos (nível,
+   * atividades, semanas cumpridas, Vínculo, atributos e marcos) e duplicação
+   * bloqueada pelo histórico único por transição.
+   */
+  private async applyAdariEvolution(userId: string, op: SyncOperation): Promise<ApplyResult> {
+    if (op.operationType === 'delete') {
+      return {};
+    }
+    const payload = adariEvolutionSyncPayloadSchema.parse(op.payload);
+    const creature = await this.prisma.userCreature.findUnique({ where: { userId } });
+    if (!creature) throw new Error('Adari não encontrado para evolução.');
+
+    // Idempotência: transição já registrada anteriormente.
+    const duplicate = await this.prisma.userAdariEvolutionHistory.findUnique({
+      where: {
+        userAdariId_fromStage_toStage: {
+          userAdariId: creature.id,
+          fromStage: payload.fromStage,
+          toStage: payload.toStage,
+        },
+      },
+    });
+    if (duplicate) return {};
+
+    if (payload.toStage !== payload.fromStage + 1) {
+      throw new Error('Transição de estágio inválida: a evolução avança um estágio por vez.');
+    }
+    if (creature.evolutionStage >= payload.toStage) {
+      // Estágio já alcançado por outra via (ex.: outro aparelho): registra só o histórico.
+      await this.prisma.userAdariEvolutionHistory.create({
+        data: {
+          id: op.entityId,
+          userAdariId: creature.id,
+          fromStage: payload.fromStage,
+          toStage: payload.toStage,
+          unlockedAt: new Date(payload.unlockedAt),
+          triggeringReason: payload.triggeringReason,
+          calculationVersion: payload.calculationVersion,
+        },
+      });
+      return {};
+    }
+    if (creature.evolutionStage !== payload.fromStage) {
+      throw new Error('Estágio de origem divergente do servidor.');
+    }
+
+    const stageDef = getStageDefinitionByInt(creature.creatureKey, payload.toStage);
+    if (!stageDef?.requirements) {
+      throw new Error('Estágio de destino desconhecido.');
+    }
+
+    const [totalActivities, weeksGoalMet] = await Promise.all([
+      this.prisma.activity.count({ where: { userId, deletedAt: null } }),
+      this.prisma.weeklyProgress.count({ where: { userId, completed: true } }),
+    ]);
+    const check = checkEvolution(
+      {
+        level: creature.level,
+        weeksGoalMet,
+        totalActivities,
+        bond: creature.bond,
+        attributes: {
+          strength: creature.strength,
+          endurance: creature.endurance,
+          agility: creature.agility,
+          discipline: creature.discipline,
+          recovery: creature.recovery,
+          spirit: creature.spirit,
+          health: creature.health,
+          energy: creature.energy,
+        },
+        defeatedMilestones: creature.defeatedMilestones,
+      },
+      stageDef.requirements,
+    );
+    if (!check.available) {
+      const pending = check.requirements.filter((r) => !r.met).map((r) => r.label);
+      throw new Error(`Requisitos de evolução não atendidos no servidor: ${pending.join('; ')}.`);
+    }
+
+    await this.prisma.$transaction([
+      this.prisma.userAdariEvolutionHistory.create({
+        data: {
+          id: op.entityId,
+          userAdariId: creature.id,
+          fromStage: payload.fromStage,
+          toStage: payload.toStage,
+          unlockedAt: new Date(payload.unlockedAt),
+          triggeringReason: payload.triggeringReason,
+          calculationVersion: payload.calculationVersion,
+        },
+      }),
+      this.prisma.userCreature.update({
+        where: { userId },
+        data: {
+          evolutionStage: payload.toStage,
+          evolvedAt: new Date(payload.unlockedAt),
+        },
+      }),
+    ]);
+    // Atributos são rematerializados (base + recompensas + reforço cumulativo do estágio).
     return { progressionChanged: true };
   }
 
@@ -682,7 +799,7 @@ export class SyncService {
     const changes: SyncServerChange[] = [];
     const updatedFilter = since ? { updatedAt: { gt: since } } : {};
 
-    const [profile, creature, goals, activities, progress, observatory, inventory, interactions] = await Promise.all([
+    const [profile, creature, goals, activities, progress, observatory, inventory, interactions, evolutions] = await Promise.all([
       this.prisma.profile.findFirst({ where: { userId, ...updatedFilter } }),
       this.prisma.userCreature.findFirst({ where: { userId, ...updatedFilter } }),
       this.prisma.weeklyGoal.findMany({ where: { userId, ...updatedFilter } }),
@@ -692,6 +809,13 @@ export class SyncService {
       this.prisma.userFoodInventory.findMany({ where: { userId, ...updatedFilter } }),
       this.prisma.adariInteraction.findMany({
         where: { userId, ...(since ? { createdAt: { gt: since } } : {}) },
+      }),
+      this.prisma.userAdariEvolutionHistory.findMany({
+        where: {
+          userAdari: { userId },
+          ...(since ? { createdAt: { gt: since } } : {}),
+        },
+        orderBy: { toStage: 'asc' },
       }),
     ]);
 
@@ -725,6 +849,7 @@ export class SyncService {
           level: creature.level,
           xp: creature.xp,
           evolutionStage: creature.evolutionStage,
+          evolvedAt: creature.evolvedAt?.toISOString() ?? null,
           strength: creature.strength,
           endurance: creature.endurance,
           agility: creature.agility,
@@ -743,6 +868,24 @@ export class SyncService {
           lastInteractionAt: creature.lastInteractionAt?.toISOString() ?? null,
           equippedAbilities: creature.equippedAbilities,
           defeatedMilestones: creature.defeatedMilestones,
+        },
+      });
+    }
+
+    for (const evolution of evolutions) {
+      changes.push({
+        entityType: 'adari_evolution',
+        entityId: evolution.id,
+        operationType: 'upsert',
+        updatedAt: evolution.createdAt.toISOString(),
+        payload: {
+          clientGeneratedId: evolution.id,
+          userAdariId: evolution.userAdariId,
+          fromStage: evolution.fromStage,
+          toStage: evolution.toStage,
+          unlockedAt: evolution.unlockedAt.toISOString(),
+          triggeringReason: evolution.triggeringReason,
+          calculationVersion: evolution.calculationVersion,
         },
       });
     }
@@ -783,6 +926,8 @@ export class SyncService {
               moodBefore: activity.moodBefore,
               moodAfter: activity.moodAfter,
               hasLocalPhoto: activity.hasLocalPhoto,
+              movementSteps: activity.movementSteps,
+              movementSignal: activity.movementSignal,
             },
       });
     }

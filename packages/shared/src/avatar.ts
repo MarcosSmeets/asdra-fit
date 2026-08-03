@@ -3,12 +3,15 @@ export const PLAYER_AVATAR_SKIN_TONES = ['luminous', 'warm', 'brown', 'deep'] as
 export const PLAYER_AVATAR_HAIR_STYLES = ['short', 'swept', 'curly'] as const;
 export const PLAYER_AVATAR_HAIR_COLORS = ['midnight', 'auburn', 'golden', 'silver'] as const;
 export const PLAYER_AVATAR_OUTFITS = ['astral', 'mist', 'constellation'] as const;
+/** Acessório opcional (camada independente). 'none' = sem acessório. */
+export const PLAYER_AVATAR_ACCESSORIES = ['none', 'visor', 'starpin', 'scarf'] as const;
 
 export type PlayerAvatarBodyModel = (typeof PLAYER_AVATAR_BODY_MODELS)[number];
 export type PlayerAvatarSkinTone = (typeof PLAYER_AVATAR_SKIN_TONES)[number];
 export type PlayerAvatarHairStyle = (typeof PLAYER_AVATAR_HAIR_STYLES)[number];
 export type PlayerAvatarHairColor = (typeof PLAYER_AVATAR_HAIR_COLORS)[number];
 export type PlayerAvatarOutfit = (typeof PLAYER_AVATAR_OUTFITS)[number];
+export type PlayerAvatarAccessory = (typeof PLAYER_AVATAR_ACCESSORIES)[number];
 
 export interface PlayerAvatarAppearance {
   bodyModel: PlayerAvatarBodyModel;
@@ -16,6 +19,8 @@ export interface PlayerAvatarAppearance {
   hairStyleKey: PlayerAvatarHairStyle;
   hairColorKey: PlayerAvatarHairColor;
   outfitKey: PlayerAvatarOutfit;
+  /** Opcional para compatibilidade com contas antigas (normalizado p/ 'none'). */
+  accessoryKey?: PlayerAvatarAccessory;
 }
 
 export const DEFAULT_PLAYER_AVATAR_APPEARANCE: PlayerAvatarAppearance = {
@@ -24,6 +29,7 @@ export const DEFAULT_PLAYER_AVATAR_APPEARANCE: PlayerAvatarAppearance = {
   hairStyleKey: 'short',
   hairColorKey: 'midnight',
   outfitKey: 'astral',
+  accessoryKey: 'none',
 };
 
 function memberOf<const T extends readonly string[]>(values: T, value: unknown): value is T[number] {
@@ -49,6 +55,9 @@ export function normalizePlayerAvatarAppearance(value: unknown): PlayerAvatarApp
     outfitKey: memberOf(PLAYER_AVATAR_OUTFITS, input.outfitKey)
       ? input.outfitKey
       : DEFAULT_PLAYER_AVATAR_APPEARANCE.outfitKey,
+    accessoryKey: memberOf(PLAYER_AVATAR_ACCESSORIES, input.accessoryKey)
+      ? input.accessoryKey
+      : 'none',
   };
 }
 
