@@ -1,6 +1,6 @@
 import { Redirect, useFocusEffect, useRouter } from 'expo-router';
 import React, { useCallback, useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { Pressable, Share, View } from 'react-native';
 import {
   BottomSheet,
   Button,
@@ -26,6 +26,8 @@ import { useTheme } from '@/theme/ThemeProvider';
 interface LeagueListItem {
   id: string;
   name: string;
+  /** Só vem preenchido para quem administra a liga. */
+  inviteCode?: string | null;
   memberCount?: number;
   _count?: { members: number };
 }
@@ -47,6 +49,17 @@ interface RankingRow {
 
 interface RankingResponse {
   ranking: RankingRow[];
+}
+
+/** Compartilha o convite pelo share nativo, sem depender de clipboard extra. */
+async function shareInvite(leagueName: string, code: string): Promise<void> {
+  try {
+    await Share.share({
+      message: `Entre na minha liga "${leagueName}" no Asdra Fit com o código ${code}.`,
+    });
+  } catch {
+    // Compartilhamento cancelado pelo usuário: não é erro.
+  }
 }
 
 function memberCountOf(item: LeagueListItem): number | null {
@@ -313,6 +326,40 @@ function LeagueScreen(): React.ReactElement {
                       accessibilityHint={`Mostra o ranking da liga ${league.name}.`}
                     />
                   </View>
+
+                  {/* O código existe no servidor desde a criação da liga, mas não
+                      era exibido em lugar nenhum — o dono era mandado convidar
+                      pessoas com um código que o app nunca mostrava. */}
+                  {league.inviteCode ? (
+                    <View style={{ gap: theme.spacing.xs }}>
+                      <Text variant="caption" color="textMuted">
+                        Código de convite — compartilhe para alguém entrar
+                      </Text>
+                      <View
+                        style={{
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          gap: theme.spacing.sm,
+                        }}
+                      >
+                        <Text
+                          variant="heading"
+                          color="brandGold"
+                          selectable
+                          accessibilityLabel={`Código de convite: ${league.inviteCode.split('').join(' ')}`}
+                        >
+                          {league.inviteCode}
+                        </Text>
+                        <Button
+                          label="Compartilhar"
+                          variant="secondary"
+                          fullWidth={false}
+                          onPress={() => void shareInvite(league.name, league.inviteCode!)}
+                          accessibilityHint={`Compartilha o código de convite da liga ${league.name}.`}
+                        />
+                      </View>
+                    </View>
+                  ) : null}
 
                   {open ? (
                     rankingLoading ? (

@@ -20,6 +20,48 @@ async function isGettingStartedCompleted(): Promise<boolean> {
   return appStateRepository.getBool(db, APP_STATE_KEYS.GETTING_STARTED_V1_COMPLETE);
 }
 
+/**
+ * Marcadores que descrevem o que o usuário JÁ FEZ, e não dados de domínio.
+ *
+ * Eles vivem na tabela `app_state`, que é por arquivo de banco, e não trafegam
+ * pelo sync (não existe `entityType: 'app_state'`). Ao entrar numa conta, o
+ * escopo troca para `adsidera-account-<id>.db`, um arquivo novo e vazio — e sem
+ * esses marcadores o app concluía que o onboarding nunca aconteceu e mandava
+ * refazer tudo, mesmo com perfil, meta e Adari chegando pelo pull.
+ */
+const CARRIED_KEYS = [
+  APP_STATE_KEYS.ONBOARDING_COMPLETE,
+  APP_STATE_KEYS.ONBOARDING_COMPLETED_STEPS,
+  APP_STATE_KEYS.GETTING_STARTED_V1_COMPLETE,
+  APP_STATE_KEYS.INTRO_SEEN,
+] as const;
+
+async function readCarriedMarkers(): Promise<Record<string, string>> {
+  const db = await getDatabase();
+  const markers: Record<string, string> = {};
+  for (const key of CARRIED_KEYS) {
+    const value = await appStateRepository.get(db, key);
+    if (value !== null) markers[key] = value;
+  }
+  return markers;
+}
+
+/**
+ * Semeia os marcadores no banco de destino sem sobrescrever o que já existe:
+ * um aparelho que já usou a conta tem o estado dele, que é mais confiável.
+ *
+ * Marcar `completedSteps` não "pula" o onboarding indevidamente: `deriveUserProgressState`
+ * ainda exige a evidência (perfil, meta, criatura) para considerar cada etapa feita.
+ */
+async function seedCarriedMarkers(markers: Record<string, string>): Promise<void> {
+  const db = await getDatabase();
+  for (const [key, value] of Object.entries(markers)) {
+    if ((await appStateRepository.get(db, key)) === null) {
+      await appStateRepository.set(db, key, value);
+    }
+  }
+}
+
 interface SessionState {
   mode: AppMode;
   onboardingComplete: boolean;
@@ -156,10 +198,14 @@ export const useSessionStore = create<SessionState>((set) => ({
     }
     const nextMode = user ? 'account' : null;
     if (user) {
+      // Ler ANTES de trocar o escopo: depois da troca o banco de origem some do
+      // handle e os marcadores do onboarding ficariam inalcançáveis.
+      const carried = await readCarriedMarkers();
       await tokenStore.setAccountUserId(user.id);
       await setDatabaseScope({ kind: 'account', userId: user.id });
       const db = await getDatabase();
       await appStateRepository.set(db, APP_STATE_KEYS.MODE, 'account');
+      await seedCarriedMarkers(carried);
       void registerDeviceForPush();
     }
     const progress = await getUserProgressState({

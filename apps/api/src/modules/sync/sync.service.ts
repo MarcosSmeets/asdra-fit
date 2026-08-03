@@ -768,7 +768,18 @@ export class SyncService {
     if (!existing) {
       return {};
     }
-    if (this.isStale(op, existing.updatedAt)) {
+    // Bootstrap de conversão, espelhando o que `applyUserCreature` já faz.
+    //
+    // A conversão CRIA o Profile no servidor com `updatedAt = agora` e sem
+    // `goal`. O push que vem em seguida carrega o perfil local, cujo `updatedAt`
+    // é necessariamente anterior — então o stale-check rejeitava 100% das
+    // conversões e o objetivo escolhido no onboarding nunca chegava ao servidor.
+    // Sem ele, o cliente não conseguia reconstruir o progresso e mandava o
+    // usuário refazer o onboarding inteiro.
+    const bootstrapping = existing.goal === null
+      ? await this.prisma.localProfileConversion.findUnique({ where: { userId } })
+      : null;
+    if (!bootstrapping && this.isStale(op, existing.updatedAt)) {
       return { conflict: this.conflict(op, existing.updatedAt) };
     }
     await this.prisma.profile.update({ where: { userId }, data: payload });

@@ -116,12 +116,33 @@ export class LeaguesService {
     return this.get(userId, league.id);
   }
 
-  listMine(userId: string) {
-    return this.prisma.league.findMany({
+  /**
+   * A lista traz o código de convite das ligas que o usuário administra.
+   *
+   * Sem isso, o código só existia na resposta de `POST /leagues` e em
+   * `GET /leagues/:id` — o app perdia o código no instante em que recarregava a
+   * lista e não tinha como recuperá-lo, deixando o dono sem como convidar
+   * ninguém. A regra de privacidade é a mesma do `get`: só o dono vê.
+   */
+  async listMine(userId: string) {
+    const leagues = await this.prisma.league.findMany({
       where: { members: { some: { userId, leftAt: null } } },
-      include: { _count: { select: { members: { where: { leftAt: null } } } } },
+      include: {
+        _count: { select: { members: { where: { leftAt: null } } } },
+        invites: {
+          where: { active: true },
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+          select: { code: true },
+        },
+      },
       orderBy: { createdAt: 'desc' },
     });
+    return leagues.map(({ invites, ...league }) => ({
+      ...league,
+      isOwner: league.ownerId === userId,
+      inviteCode: league.ownerId === userId ? (invites[0]?.code ?? null) : null,
+    }));
   }
 
   async get(userId: string, leagueId: string) {
