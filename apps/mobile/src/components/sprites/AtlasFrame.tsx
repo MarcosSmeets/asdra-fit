@@ -21,12 +21,23 @@ export interface AtlasFrameProps {
 const MAX_RETRIES = 2;
 const RETRY_DELAYS_MS = [400, 1200];
 
+/**
+ * Requisição pendurada conta como falha.
+ *
+ * Um servidor de assets saturado (o caso do Metro por túnel) não recusa a
+ * conexão: ele simplesmente não responde. Sem este teto, `onError` nunca
+ * dispara, `failed` nunca vira true e o `<Image>` fica renderizando nada — o
+ * mesmo "espaço vazio" que a degradação para placeholder deveria impedir.
+ */
+const LOAD_TIMEOUT_MS = 8000;
+
 /** Recorta uma célula sem criar novos bitmaps durante a animação. */
 export function AtlasFrame({ source, columns, rows, column, row, size, atlasAspectRatio,
   accessibilityLabel, onErrorFallback, tag }: AtlasFrameProps): React.ReactElement {
   const sourceKey = sourceKeyOf(source);
   const [attempt, setAttempt] = useState(0);
   const [failed, setFailed] = useState(false);
+  const [loaded, setLoaded] = useState(false);
   const retryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // A trava de falha precisa cair quando a fonte muda; sem isso, uma falha
@@ -37,6 +48,7 @@ export function AtlasFrame({ source, columns, rows, column, row, size, atlasAspe
   useEffect(() => {
     setAttempt(0);
     setFailed(false);
+    setLoaded(false);
   }, [sourceKey]);
 
   useEffect(() => () => {
@@ -53,7 +65,16 @@ export function AtlasFrame({ source, columns, rows, column, row, size, atlasAspe
     retryTimer.current = setTimeout(() => setAttempt((value) => value + 1), delay);
   }, [attempt, columns, rows, size, source, sourceKey, tag]);
 
+  // Teto de espera por tentativa: sem resposta em LOAD_TIMEOUT_MS, trata como
+  // falha para que a cadeia de fallback aconteça em vez de a tela ficar vazia.
+  useEffect(() => {
+    if (loaded || failed) return undefined;
+    const timer = setTimeout(() => handleError('tempo esgotado ao carregar'), LOAD_TIMEOUT_MS);
+    return () => clearTimeout(timer);
+  }, [attempt, failed, handleError, loaded]);
+
   const handleLoad = useCallback(() => {
+    setLoaded(true);
     if (attempt > 0) recordSpriteRecovery(sourceKey, attempt);
   }, [attempt, sourceKey]);
 

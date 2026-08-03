@@ -90,6 +90,27 @@ describe('AtlasFrame', () => {
     expect(screen.UNSAFE_queryByType(Image)).toBeNull();
   });
 
+  it('trata requisição pendurada como falha', () => {
+    render(<AtlasFrame source={ATLAS_A} {...props} />);
+    // Um servidor de assets saturado não recusa a conexão: ele não responde.
+    // Sem teto de espera, `onError` nunca dispara e o espaço fica vazio — que é
+    // exatamente o sintoma relatado no aparelho.
+    act(() => { jest.advanceTimersByTime(8000); });
+    act(() => { jest.advanceTimersByTime(400); });
+    act(() => { jest.advanceTimersByTime(8000); });
+    act(() => { jest.advanceTimersByTime(1200); });
+    act(() => { jest.advanceTimersByTime(8000); });
+    expect(screen.getByLabelText('Adari (imagem indisponível)')).toBeTruthy();
+  });
+
+  it('não desiste depois que a imagem carrega', () => {
+    render(<AtlasFrame source={ATLAS_A} {...props} />);
+    const image = screen.UNSAFE_getByType(Image);
+    act(() => { image.props.onLoad(); });
+    act(() => { jest.advanceTimersByTime(60_000); });
+    expect(screen.UNSAFE_queryByType(Image)).not.toBeNull();
+  });
+
   it('registra a falha com o erro nativo para diagnóstico', () => {
     render(<AtlasFrame source={ATLAS_A} {...props} tag="adari:solivar:0" />);
     fireError();
