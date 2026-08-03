@@ -33,11 +33,9 @@ COPY --from=builder /app/apps/api/node_modules ./apps/api/node_modules
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
 COPY --from=builder /app/apps/api/prisma ./apps/api/prisma
 COPY --from=builder /app/apps/api/package.json ./apps/api/package.json
+COPY apps/api/docker-entrypoint.sh ./apps/api/docker-entrypoint.sh
+RUN chmod +x ./apps/api/docker-entrypoint.sh
 
 WORKDIR /app/apps/api
 EXPOSE 3000
-# Aplica migrations e sobe a API.
-# O .npmrc usa node-linker=hoisted, entao os bins vivem em /app/node_modules/.bin
-# e nao em apps/api/node_modules/.bin. Chamar o binario direto tambem evita o
-# download do pnpm pelo corepack a cada boot do container.
-CMD ["sh", "-c", "/app/node_modules/.bin/prisma migrate deploy && node dist/main.js"]
+CMD ["/app/apps/api/docker-entrypoint.sh"]
