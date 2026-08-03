@@ -9,8 +9,14 @@ import {
   type LocalInsights,
 } from '@/services/analyticsService';
 import { wipeAllLocalData } from '@/services/privacyService';
+import {
+  arePrivacyOptionsRequired,
+  showAdsPrivacyOptions,
+} from '@/services/adsConsentService';
 import { useTheme } from '@/theme/ThemeProvider';
+import { ADS_ENABLED } from '@/config/ads';
 import { ONLINE_FEATURES_ENABLED } from '@/config/features';
+import { SUPPORT } from '@ad-sidera/config';
 
 export default function PrivacySettings(): React.ReactElement {
   const theme = useTheme();
@@ -18,12 +24,14 @@ export default function PrivacySettings(): React.ReactElement {
   const [working, setWorking] = useState(false);
   const [analyticsOn, setAnalyticsOn] = useState(false);
   const [insights, setInsights] = useState<LocalInsights | null>(null);
+  const [privacyOptionsAvailable, setPrivacyOptionsAvailable] = useState(false);
 
   useEffect(() => {
     void (async () => {
       const enabled = await isAnalyticsEnabled();
       setAnalyticsOn(enabled);
       if (enabled) setInsights(await getLocalInsights());
+      setPrivacyOptionsAvailable(await arePrivacyOptionsRequired());
     })();
   }, []);
 
@@ -83,12 +91,39 @@ export default function PrivacySettings(): React.ReactElement {
         </Text>
       </Card>
 
-      <Card style={{ gap: theme.spacing.sm }}>
-        <Text variant="section">Seus dados não são vendidos</Text>
-        <Text variant="body" color="textMuted">
-          Não vendemos nem compartilhamos seus dados com terceiros para publicidade.
-        </Text>
-      </Card>
+      {ADS_ENABLED ? (
+        <Card style={{ gap: theme.spacing.sm }}>
+          <Text variant="section">Anúncios que mantêm o app gratuito</Text>
+          <Text variant="body" color="textMuted">
+            O app exibe um único banner acima das abas. Nunca há anúncio em tela cheia, na
+            abertura, nem em troca de recompensa — nada no jogo se compra assistindo anúncio.
+          </Text>
+          <Text variant="body" color="textMuted">
+            Para isso, o Google AdMob pode usar o identificador de publicidade do seu aparelho.
+            Suas fotos, treinos, metas e dados do seu Adari nunca são enviados para a rede de
+            anúncios. Não vendemos seus dados.
+          </Text>
+          <Text variant="caption" color="textMuted">
+            Você pode redefinir ou limitar esse identificador nas configurações do próprio
+            aparelho.
+          </Text>
+          {privacyOptionsAvailable ? (
+            <Button
+              label="Opções de anúncios"
+              variant="secondary"
+              onPress={() => void showAdsPrivacyOptions()}
+              accessibilityHint="Reabre o formulário de consentimento de anúncios."
+            />
+          ) : null}
+        </Card>
+      ) : (
+        <Card style={{ gap: theme.spacing.sm }}>
+          <Text variant="section">Seus dados não são vendidos</Text>
+          <Text variant="body" color="textMuted">
+            Não vendemos nem compartilhamos seus dados com terceiros para publicidade.
+          </Text>
+        </Card>
+      )}
 
       {ONLINE_FEATURES_ENABLED ? (
         <Card style={{ gap: theme.spacing.sm }}>
@@ -113,6 +148,15 @@ export default function PrivacySettings(): React.ReactElement {
         <Text variant="body" color="textMuted">
           Tratamos seus dados seguindo os princípios da LGPD: finalidade clara, coleta mínima e
           controle nas suas mãos.
+        </Text>
+        {ADS_ENABLED ? (
+          <Text variant="body" color="textMuted">
+            A base legal para o identificador de publicidade é o legítimo interesse quando os
+            anúncios não são personalizados, e o seu consentimento quando são.
+          </Text>
+        ) : null}
+        <Text variant="caption" color="textMuted">
+          Dúvidas ou pedidos sobre seus dados: {SUPPORT.PRIVACY_CONTACT}
         </Text>
       </Card>
 

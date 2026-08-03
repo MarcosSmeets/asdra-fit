@@ -13,6 +13,9 @@ const moduleNameMapper = {
   '^@ad-sidera/config$': '<rootDir>/../../packages/config/src/index.ts',
   '^@/(.*)$': '<rootDir>/src/$1',
   '\\.(png|jpg|jpeg|gif|webp)$': '<rootDir>/jest.assetStub.js',
+  // Mapeado aqui, e não por um diretório `__mocks__/`: `roots` está restrito a
+  // `src`/`app`, então um mock de node_modules não seria aplicado sozinho.
+  '^react-native-google-mobile-ads$': '<rootDir>/jest.googleMobileAdsMock.js',
 };
 
 /** @type {import('jest').Config} */

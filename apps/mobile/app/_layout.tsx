@@ -18,6 +18,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ONLINE_FEATURES_ENABLED } from '../src/config/features';
 import { getDatabase } from '../src/db/database';
+import { initializeAds } from '../src/services/adsConsentService';
 import { track } from '../src/services/analyticsService';
 import { startAutoSync } from '../src/sync/autoSync';
 import { ThemeProvider } from '../src/theme/ThemeProvider';
@@ -122,6 +123,7 @@ function RootLayoutContent({ onRetry }: { onRetry: () => void }): React.ReactEle
   useEffect(() => {
     if (!dbReady) return undefined;
     void track('app_opened');
+    void initializeAds();
     return ONLINE_FEATURES_ENABLED ? startAutoSync() : undefined;
   }, [dbReady]);
 

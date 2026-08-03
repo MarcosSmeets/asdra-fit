@@ -1,6 +1,8 @@
+import { BottomTabBar, type BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { Redirect, Tabs } from 'expo-router';
 import React from 'react';
-import { TAB_ICONS, type TabIconName } from '@/components';
+import { View } from 'react-native';
+import { AdBanner, TAB_ICONS, type TabIconName } from '@/components';
 import { ONLINE_FEATURES_ENABLED } from '@/config/features';
 import { useTheme } from '@/theme/ThemeProvider';
 import { useSessionStore } from '@/stores/sessionStore';
@@ -32,6 +34,15 @@ export default function TabsLayout(): React.ReactElement {
 
   return (
     <Tabs
+      // `tabBar` customizada é a única forma de o banner ficar ENTRE o conteúdo e
+      // as abas: como irmão de <Tabs> num flex column ele cairia abaixo da barra,
+      // por cima do indicador de home.
+      tabBar={(props: BottomTabBarProps) => (
+        <View style={{ backgroundColor: theme.colors.surfaceElevated }}>
+          <AdBanner placement="tabs" />
+          <BottomTabBar {...props} />
+        </View>
+      )}
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: theme.colors.primary,

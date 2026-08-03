@@ -16,6 +16,9 @@ export { SyncStatus, type SyncStatusProps } from './SyncStatus';
 // Design system pixel 32-bit (Build 5) — API canônica para novas telas
 export * from './pixel';
 
+// Anúncios (MRK-C) — deliberadamente fora do barrel `./pixel`: ads não são design system.
+export { AdBanner, AdSlotPlaceholder, type AdBannerProps, type AdPlacement } from './ads';
+
 // Ícones (SVG)
 export { StarIcon } from './icons/StarIcon';
 export { AttributeIcon, type AttributeIconKey } from './icons/AttributeIcon';

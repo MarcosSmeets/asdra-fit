@@ -9,6 +9,7 @@
       "env": {
         "EXPO_PUBLIC_ENVIRONMENT": "preview",
         "EXPO_PUBLIC_ENABLE_ONLINE_FEATURES": "true",
+        "EXPO_PUBLIC_ENABLE_ADS": "true",
         "EXPO_PUBLIC_API_URL": "https://ad-sideraapi-production.up.railway.app/api/v1"
       }
     },
