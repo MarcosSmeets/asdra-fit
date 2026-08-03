@@ -14,6 +14,12 @@
       "port": 8081
     },
     {
+      "name": "mobile-tunnel",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["run", "dev:mobile:tunnel"],
+      "port": 8081
+    },
+    {
       "name": "db",
       "runtimeExecutable": "docker",
       "runtimeArgs": ["compose", "up", "db"],

@@ -10,6 +10,7 @@
   "scripts": {
     "dev": "turbo run dev",
     "dev:mobile": "pnpm --filter @ad-sidera/mobile dev",
+    "dev:mobile:tunnel": "pnpm --filter @ad-sidera/mobile dev:tunnel",
     "dev:api": "pnpm --filter @ad-sidera/api start:dev",
     "db:generate": "pnpm --filter @ad-sidera/api db:generate",
     "db:migrate": "pnpm --filter @ad-sidera/api db:migrate",
