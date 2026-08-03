@@ -1,4 +1,4 @@
-import { DEFAULT_PLAYER_AVATAR_APPEARANCE, getCreatureByKey, type PlayerAvatarAppearance } from '@ad-sidera/shared';
+import { getCreatureByKey } from '@ad-sidera/shared';
 import { useFocusEffect, useRouter } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import { Pressable, View } from 'react-native';
@@ -7,7 +7,6 @@ import {
   Button,
   Card,
   CelestialDivider,
-  PlayerAvatar,
   Screen,
   SectionHeader,
   SyncStatus,
@@ -20,7 +19,6 @@ import { useGameStore } from '@/stores/gameStore';
 import { useSessionStore } from '@/stores/sessionStore';
 import { flushOutbox, syncSnapshot, type SyncSnapshot } from '@/sync/syncEngine';
 import { useTheme } from '@/theme/ThemeProvider';
-import { getPlayerAvatarAppearance } from '@/services/playerAvatarService';
 import { ApiError } from '@/api/client';
 
 function NavRow({
@@ -103,7 +101,6 @@ export default function ProfileScreen(): React.ReactElement {
   const [syncing, setSyncing] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const [syncError, setSyncError] = useState<string | null>(null);
-  const [avatarAppearance, setAvatarAppearance] = useState<PlayerAvatarAppearance>(DEFAULT_PLAYER_AVATAR_APPEARANCE);
 
   const refreshPending = useCallback(async () => {
     const snapshot = await syncSnapshot(mode);
@@ -115,7 +112,6 @@ export default function ProfileScreen(): React.ReactElement {
     useCallback(() => {
       void (async () => {
         await useGameStore.getState().load();
-        setAvatarAppearance(await getPlayerAvatarAppearance());
         if (mode === 'account') {
           await refreshPending();
         }
@@ -200,21 +196,6 @@ export default function ProfileScreen(): React.ReactElement {
       <CelestialDivider />
 
       {/* Hábitos */}
-      <SectionHeader title="Explorador" subtitle="Sua aparência nos mapas e passeios" />
-      <Card>
-        <View style={{ alignItems: 'center', gap: theme.spacing.sm }}>
-          <PlayerAvatar appearance={avatarAppearance} height={150} />
-          <NavRow
-            label="Alterar aparência"
-            description="Modelo visual, pele, cabelo, cor e roupa"
-            onPress={() => router.push('/avatar')}
-            accessibilityHint="Abre a personalização do Explorador."
-          />
-        </View>
-      </Card>
-
-      <CelestialDivider />
-
       <SectionHeader title="Hábitos" subtitle="Sua meta semanal e seus lembretes" />
       <Card>
         <NavRow

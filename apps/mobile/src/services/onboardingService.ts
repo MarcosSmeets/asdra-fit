@@ -2,12 +2,7 @@ import { getDatabase } from '../db/database';
 import type { ProfileRecord } from '../db/models';
 import { appStateRepository, APP_STATE_KEYS } from '../db/repositories/appStateRepository';
 import { profileRepository } from '../db/repositories/profileRepository';
-import {
-  DEFAULT_PLAYER_AVATAR_APPEARANCE,
-  getWeekBounds,
-  normalizePlayerAvatarAppearance,
-  type PlayerAvatarAppearance,
-} from '@ad-sidera/shared';
+import { getWeekBounds } from '@ad-sidera/shared';
 import { nowIso } from '../utils/datetime';
 import { uuidv4 } from '../utils/id';
 import { createInitialCreatureState } from './creatureService';
@@ -15,6 +10,7 @@ import type { Goal } from '@ad-sidera/shared';
 import {
   deriveUserProgressState,
   firstPendingOnboardingStep,
+  ONBOARDING_STEP_KEYS,
   type OnboardingStepKey,
   type UserProgressState,
 } from '../domain/userProgress';
@@ -33,7 +29,6 @@ export interface OnboardingData {
   creatureKey: string;
   nickname?: string;
   timezone: string;
-  avatarAppearance: PlayerAvatarAppearance;
 }
 
 export interface OnboardingDraft {
@@ -46,7 +41,6 @@ export interface OnboardingDraft {
   remindersEnabled: boolean;
   reminderHour: number;
   creatureKey: string | null;
-  avatarAppearance: PlayerAvatarAppearance;
   completedSteps: OnboardingStepKey[];
 }
 
@@ -60,9 +54,19 @@ export const DEFAULT_ONBOARDING_DRAFT: OnboardingDraft = {
   remindersEnabled: false,
   reminderHour: 18,
   creatureKey: null,
-  avatarAppearance: DEFAULT_PLAYER_AVATAR_APPEARANCE,
   completedSteps: [],
 };
+
+/** O passo do Explorador era o índice 5; tudo depois dele recuou uma posição. */
+const REMOVED_AVATAR_STEP_INDEX = 5;
+
+function legacyStep(parsed: Partial<OnboardingDraft>): number {
+  const step = typeof parsed.step === 'number' ? parsed.step : 0;
+  const hadAvatarStep = Array.isArray(parsed.completedSteps)
+    && (parsed.completedSteps as readonly string[]).includes('avatar');
+  const adjusted = hadAvatarStep && step > REMOVED_AVATAR_STEP_INDEX ? step - 1 : step;
+  return Math.max(0, Math.min(ONBOARDING_STEP_KEYS.length - 1, adjusted));
+}
 
 function parseDraft(value: string | null): OnboardingDraft {
   if (!value) return { ...DEFAULT_ONBOARDING_DRAFT };
@@ -73,8 +77,13 @@ function parseDraft(value: string | null): OnboardingDraft {
       ...parsed,
       preferredDays: Array.isArray(parsed.preferredDays) ? parsed.preferredDays : [],
       activityTypes: Array.isArray(parsed.activityTypes) ? parsed.activityTypes : [],
-      completedSteps: Array.isArray(parsed.completedSteps) ? parsed.completedSteps : [],
-      avatarAppearance: normalizePlayerAvatarAppearance(parsed.avatarAppearance),
+      // Rascunho gravado antes da remoção do passo do Explorador: a chave some da
+      // lista e o índice do passo recua um, senão o usuário pularia os lembretes.
+      completedSteps: Array.isArray(parsed.completedSteps)
+        ? parsed.completedSteps.filter((key): key is OnboardingStepKey =>
+            (ONBOARDING_STEP_KEYS as readonly string[]).includes(key))
+        : [],
+      step: legacyStep(parsed),
     };
   } catch {
     return { ...DEFAULT_ONBOARDING_DRAFT };
@@ -127,9 +136,7 @@ export async function getUserProgressState(options: {
     options.remoteHasCreature === true &&
     Boolean(profile && goal && creature && profile.goal && goal.activityTypes.length > 0);
   if (completedSteps.length === 0 && (marker || remoteComplete) && profile && goal && creature) {
-    completedSteps = [
-      'profile', 'objective', 'activities', 'goal', 'preferredDays', 'avatar', 'notifications', 'adari', 'summary',
-    ];
+    completedSteps = [...ONBOARDING_STEP_KEYS];
   }
   return deriveUserProgressState({
     mode: options.mode,
@@ -168,7 +175,6 @@ export async function completeOnboarding(data: OnboardingData): Promise<void> {
     timezone: data.timezone,
     locale: 'pt-BR',
     avatarType: 'star',
-    avatarAppearance: data.avatarAppearance,
     shareCreatureLevel: true,
     goal: data.goal,
     createdAt: existingProfile?.createdAt ?? now,
@@ -190,9 +196,7 @@ export async function completeOnboarding(data: OnboardingData): Promise<void> {
     syncStatus: 'pending',
   };
   const creature = existingCreature ?? createInitialCreatureState(data.creatureKey, data.nickname);
-  const steps = [
-    'profile', 'objective', 'activities', 'goal', 'preferredDays', 'avatar', 'notifications', 'adari', 'summary',
-  ] satisfies OnboardingStepKey[];
+  const steps = [...ONBOARDING_STEP_KEYS] satisfies OnboardingStepKey[];
 
   await db.withTransactionAsync(async () => {
     await profileRepository.upsert(db, profile);

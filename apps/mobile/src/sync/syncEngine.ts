@@ -18,7 +18,6 @@ import { weeklyGoalRepository } from '../db/repositories/weeklyGoalRepository';
 import { weeklyProgressRepository } from '../db/repositories/weeklyProgressRepository';
 import { activityRepository } from '../db/repositories/activityRepository';
 import type { SyncServerChange } from '@ad-sidera/shared';
-import { normalizePlayerAvatarAppearance } from '@ad-sidera/shared';
 import { uuidv4 } from '../utils/id';
 import { reconcileFlush } from './reconcile';
 
@@ -65,9 +64,6 @@ async function applyServerChanges(
         timezone: String(payload.timezone ?? 'UTC'),
         locale: String(payload.locale ?? 'pt-BR'),
         avatarType: String(payload.avatarType ?? 'star'),
-        avatarAppearance: normalizePlayerAvatarAppearance(
-          payload.avatarAppearance ?? current?.avatarAppearance,
-        ),
         shareCreatureLevel: Boolean(payload.shareCreatureLevel ?? true),
         goal: payload.goal ? String(payload.goal) : (current?.goal ?? null),
         createdAt: current?.createdAt ?? change.updatedAt,

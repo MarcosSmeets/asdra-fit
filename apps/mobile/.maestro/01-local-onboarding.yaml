@@ -21,8 +21,6 @@ appId: app.asdrafit.mobile
 - assertVisible: 'Sua meta semanal'
 - tapOn: 'Continuar' # meta padrão
 - tapOn: 'Continuar' # dias
-- assertVisible: 'Como é seu Explorador?'
-- tapOn: 'Continuar' # avatar padrão
 - assertVisible: 'Lembretes gentis'
 - tapOn: 'Continuar' # notificações
 - assertVisible: 'Escolha seu primeiro Adari'
@@ -30,6 +28,12 @@ appId: app.asdrafit.mobile
 - tapOn: 'Continuar'
 - assertVisible: 'Tudo pronto!'
 - tapOn: 'Concluir'
+# Escolha entre conta e modo local. `optional` porque a tela redireciona sozinha
+# quando EXPO_PUBLIC_ENABLE_ONLINE_FEATURES=false — assim o mesmo fluxo passa
+# com a flag ligada ou desligada.
+- tapOn:
+    text: 'Continuar sem conta'
+    optional: true
 # Guia pós-onboarding
 - assertVisible: 'Treine no mundo real'
 - tapOn: 'Continuar'

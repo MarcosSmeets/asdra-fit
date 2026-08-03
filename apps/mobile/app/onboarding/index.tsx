@@ -9,12 +9,9 @@ import {
   ISO_WEEKDAYS,
   type ActivityType,
   type Goal,
-  DEFAULT_PLAYER_AVATAR_APPEARANCE,
-  type PlayerAvatarAppearance,
 } from '@ad-sidera/shared';
 import {
   AdariCard,
-  AvatarCustomizer,
   AdariPortrait,
   Button,
   Card,
@@ -35,15 +32,14 @@ import {
   type OnboardingData,
   type OnboardingDraft,
 } from '@/services/onboardingService';
-import type { OnboardingStepKey } from '@/domain/userProgress';
+import { ONBOARDING_STEP_KEYS, type OnboardingStepKey } from '@/domain/userProgress';
 import { useGameStore } from '@/stores/gameStore';
 import { useSessionStore } from '@/stores/sessionStore';
 import { useTheme } from '@/theme/ThemeProvider';
 
-const TOTAL_STEPS = 9;
-const STEP_KEYS: readonly OnboardingStepKey[] = [
-  'profile', 'objective', 'activities', 'goal', 'preferredDays', 'avatar', 'notifications', 'adari', 'summary',
-];
+// Derivado do domínio: a ordem dos passos é fonte única em ONBOARDING_STEP_KEYS.
+const STEP_KEYS = ONBOARDING_STEP_KEYS;
+const TOTAL_STEPS = STEP_KEYS.length;
 
 const ARCHETYPE_LABELS: Record<string, string> = {
   forca: 'Força',
@@ -135,6 +131,8 @@ export default function Onboarding(): React.ReactElement {
   const router = useRouter();
 
   const [step, setStep] = useState(0);
+  // Toda condicional de render e validação passa pela chave, nunca pelo índice.
+  const stepKey = STEP_KEYS[step] ?? 'summary';
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
@@ -148,9 +146,6 @@ export default function Onboarding(): React.ReactElement {
   const [remindersEnabled, setRemindersEnabled] = useState(false);
   const [reminderHour, setReminderHour] = useState(18);
   const [creatureKey, setCreatureKey] = useState<string | null>(null);
-  const [avatarAppearance, setAvatarAppearance] = useState<PlayerAvatarAppearance>(
-    DEFAULT_PLAYER_AVATAR_APPEARANCE,
-  );
 
   const trimmedName = displayName.trim();
   const selectedCreature = CREATURES.find((c) => c.key === creatureKey) ?? null;
@@ -169,7 +164,6 @@ export default function Onboarding(): React.ReactElement {
         setRemindersEnabled(draft.remindersEnabled);
         setReminderHour(draft.reminderHour);
         setCreatureKey(draft.creatureKey);
-        setAvatarAppearance(draft.avatarAppearance);
         setCompletedSteps(draft.completedSteps);
       })
       .catch(() => {
@@ -193,7 +187,6 @@ export default function Onboarding(): React.ReactElement {
       remindersEnabled,
       reminderHour,
       creatureKey,
-      avatarAppearance,
       completedSteps,
     };
     void saveOnboardingDraft(draft).catch(() => {
@@ -201,18 +194,18 @@ export default function Onboarding(): React.ReactElement {
     });
   }, [
     hydrated, step, displayName, goal, targetCount, preferredDays, activityTypes,
-    remindersEnabled, reminderHour, creatureKey, avatarAppearance, completedSteps,
+    remindersEnabled, reminderHour, creatureKey, completedSteps,
   ]);
 
   const isStepValid = (): boolean => {
-    switch (step) {
-      case 0:
+    switch (stepKey) {
+      case 'profile':
         return trimmedName.length > 0 && trimmedName.length <= 60;
-      case 1:
+      case 'objective':
         return goal !== null;
-      case 2:
+      case 'activities':
         return activityTypes.length >= 1;
-      case 7:
+      case 'adari':
         return creatureKey !== null;
       default:
         return true;
@@ -247,7 +240,6 @@ export default function Onboarding(): React.ReactElement {
       activityTypes,
       creatureKey,
       timezone,
-      avatarAppearance,
     };
     try {
       const finishedSteps = [...new Set([...completedSteps, ...STEP_KEYS])];
@@ -262,7 +254,6 @@ export default function Onboarding(): React.ReactElement {
         remindersEnabled,
         reminderHour,
         creatureKey,
-        avatarAppearance,
         completedSteps: finishedSteps,
       });
       if (remindersEnabled) {
@@ -281,7 +272,11 @@ export default function Onboarding(): React.ReactElement {
       await completeOnboarding(data);
       await useSessionStore.getState().completeOnboarding();
       await useGameStore.getState().load();
-      router.replace('/getting-started');
+      // A escolha entre conta e modo local vem aqui, com perfil e criatura já
+      // persistidos — é o que permite converter o perfil local em vez de criar
+      // uma conta nova. A própria tela redireciona para /getting-started quando
+      // não faz sentido oferecer (build offline ou usuário já logado).
+      router.replace('/account-choice');
     } catch {
       setSaveError('Não foi possível concluir agora. Seus dados foram preservados; tente novamente.');
       setSaving(false);
@@ -297,7 +292,7 @@ export default function Onboarding(): React.ReactElement {
       />
       <Text variant="caption" color="textMuted">{`Passo ${step + 1} de ${TOTAL_STEPS}`}</Text>
 
-      {step === 0 && (
+      {stepKey === 'profile' && (
         <View style={{ gap: theme.spacing.md }}>
           <Text variant="title">Como podemos te chamar?</Text>
           <Text variant="body" color="textMuted">
@@ -315,7 +310,7 @@ export default function Onboarding(): React.ReactElement {
         </View>
       )}
 
-      {step === 1 && (
+      {stepKey === 'objective' && (
         <View style={{ gap: theme.spacing.md }}>
           <Text variant="title">Qual é o seu objetivo inicial?</Text>
           <Text variant="body" color="textMuted">
@@ -329,7 +324,7 @@ export default function Onboarding(): React.ReactElement {
         </View>
       )}
 
-      {step === 3 && (
+      {stepKey === 'goal' && (
         <View style={{ gap: theme.spacing.lg }}>
           <Text variant="title">Sua meta semanal</Text>
           <Text variant="body" color="textMuted">
@@ -348,7 +343,7 @@ export default function Onboarding(): React.ReactElement {
         </View>
       )}
 
-      {step === 2 && (
+      {stepKey === 'activities' && (
         <View style={{ gap: theme.spacing.md }}>
           <Text variant="title">Que atividades você curte?</Text>
           <Text variant="body" color="textMuted">
@@ -367,7 +362,7 @@ export default function Onboarding(): React.ReactElement {
         </View>
       )}
 
-      {step === 4 && (
+      {stepKey === 'preferredDays' && (
         <View style={{ gap: theme.spacing.md }}>
           <Text variant="title">Dias preferenciais</Text>
           <Text variant="body" color="textMuted">
@@ -386,17 +381,7 @@ export default function Onboarding(): React.ReactElement {
         </View>
       )}
 
-      {step === 5 && (
-        <View style={{ gap: theme.spacing.md }}>
-          <Text variant="title">Como é seu Explorador?</Text>
-          <Text variant="body" color="textMuted">
-            Escolha uma aparência visual. Ela não define sua identidade e pode ser alterada no Perfil.
-          </Text>
-          <AvatarCustomizer value={avatarAppearance} onChange={setAvatarAppearance} compact />
-        </View>
-      )}
-
-      {step === 6 && (
+      {stepKey === 'notifications' && (
         <View style={{ gap: theme.spacing.lg }}>
           <Text variant="title">Lembretes gentis</Text>
           <Text variant="body" color="textMuted">
@@ -443,7 +428,7 @@ export default function Onboarding(): React.ReactElement {
         </View>
       )}
 
-      {step === 7 && (
+      {stepKey === 'adari' && (
         <View style={{ gap: theme.spacing.md }}>
           <SectionHeader
             title="Escolha seu primeiro Adari"
@@ -498,7 +483,7 @@ export default function Onboarding(): React.ReactElement {
         </View>
       )}
 
-      {step === 8 && (
+      {stepKey === 'summary' && (
         <View style={{ gap: theme.spacing.md }}>
           <Text variant="title">Tudo pronto!</Text>
           <Text variant="body" color="textMuted">
@@ -512,7 +497,6 @@ export default function Onboarding(): React.ReactElement {
           ) : null}
           <Card style={{ gap: theme.spacing.sm }}>
             <SummaryRow label="Nome" value={trimmedName} />
-            <SummaryRow label="Explorador" value={avatarAppearance.bodyModel === 'feminine' ? 'Modelo feminino' : 'Modelo masculino'} />
             <SummaryRow label="Objetivo" value={goal ? GOAL_LABELS[goal] : '—'} />
             <SummaryRow label="Meta semanal" value={`${targetCount} atividade(s)`} />
             <SummaryRow

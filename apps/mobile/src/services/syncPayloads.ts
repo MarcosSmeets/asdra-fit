@@ -131,14 +131,12 @@ export function profileSyncPayload(p: {
   avatarType: string;
   shareCreatureLevel: boolean;
   goal?: string | null;
-  avatarAppearance: import('@ad-sidera/shared').PlayerAvatarAppearance;
 }): Record<string, unknown> {
   return {
     displayName: p.displayName,
     timezone: p.timezone,
     locale: p.locale,
     avatarType: p.avatarType,
-    avatarAppearance: p.avatarAppearance,
     shareCreatureLevel: p.shareCreatureLevel,
     goal: p.goal ?? undefined,
   };

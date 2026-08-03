@@ -22,7 +22,10 @@ export class ProfilesService {
 
   async update(userId: string, input: UpdateProfileInput) {
     await this.get(userId);
-    return this.prisma.profile.update({ where: { userId }, data: input });
+    // `avatarAppearance` (Explorador) segue aceito por compatibilidade com
+    // clientes antigos, mas nunca é escrito. Ver updateProfileSchema.
+    const { avatarAppearance: _removedExplorer, ...data } = input;
+    return this.prisma.profile.update({ where: { userId }, data });
   }
 
   /** Exportação de dados (LGPD). Nunca inclui fotos nem caminhos de fotos. */

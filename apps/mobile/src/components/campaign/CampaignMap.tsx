@@ -1,4 +1,4 @@
-import type { PlayerAvatarAppearance, RegionDefinition } from '@ad-sidera/shared';
+import type { RegionDefinition } from '@ad-sidera/shared';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Image, ImageBackground, StyleSheet, View } from 'react-native';
 import { journeyRegionAssets } from '../../content/journey/tiles';
@@ -14,7 +14,6 @@ import {
 } from '../../domain/journeyNodes';
 import { useReducedMotion, useTheme } from '../../theme/ThemeProvider';
 import { AdariActionSprite } from '../adari/AdariActionSprite';
-import { PlayerAvatar } from '../avatar/PlayerAvatar';
 import { Text } from '../Text';
 import {
   CAMPAIGN_ROW_HEIGHT,
@@ -27,7 +26,6 @@ export interface CampaignMapProps {
   /** Adversários da região (de getCampaignState → RegionState.adversaries). */
   adversaries: AdversaryState[];
   onSelect: (adversaryId: string) => void;
-  avatarAppearance?: PlayerAvatarAppearance;
   creatureKey?: string;
   /** Estágio evolutivo do Adari que acompanha o avatar (0..3). */
   creatureStage?: number;
@@ -62,7 +60,7 @@ const TRAIL_WIDTH = 4;
  * A lógica de grafo/caminho é 100% de journeyNodes.ts (spec §27) — intocada.
  */
 export function CampaignMap({
-  region, adversaries, onSelect, avatarAppearance, creatureKey, creatureStage = 0, showTravelers = false,
+  region, adversaries, onSelect, creatureKey, creatureStage = 0, showTravelers = false,
 }: CampaignMapProps): React.ReactElement {
   const theme = useTheme();
   const reducedMotion = useReducedMotion();
@@ -250,22 +248,21 @@ export function CampaignMap({
           ))}
         </View>
 
-        {showTravelers && avatarAppearance && creatureKey && !regionLocked ? (
+        {/* A guarda perdeu o `avatarAppearance`: mantê-lo faria os travelers
+            sumirem por completo, levando o Adari junto. */}
+        {showTravelers && creatureKey && !regionLocked ? (
           <Animated.View
             pointerEvents="none"
             testID="journey-travelers"
             style={[styles.travelers, { transform: [{ translateX: travelerX }, { translateY: travelerY }] }]}
           >
-            {creatureKey ? (
-              <AdariActionSprite
-                creatureKey={creatureKey}
-                state={traveling ? 'happy' : 'idle'}
-                size={46}
-                stage={creatureStage}
-                reduceMotion={reducedMotion}
-              />
-            ) : null}
-            <PlayerAvatar appearance={avatarAppearance} height={76} />
+            <AdariActionSprite
+              creatureKey={creatureKey}
+              state={traveling ? 'happy' : 'idle'}
+              size={46}
+              stage={creatureStage}
+              reduceMotion={reducedMotion}
+            />
           </Animated.View>
         ) : null}
 

@@ -5,7 +5,6 @@ import type {
   Intensity,
   Mood,
   MovementSignal,
-  PlayerAvatarAppearance,
   SyncStatus,
 } from '@ad-sidera/shared';
 
@@ -176,9 +175,8 @@ export interface ProfileRecord {
   displayName: string;
   timezone: string;
   locale: string;
+  /** Emblema (star/moon/comet/nebula) exibido em liga e duelos. */
   avatarType: string;
-  /** Aparência do Explorador; separada do emblema legado `avatarType`. */
-  avatarAppearance: PlayerAvatarAppearance;
   shareCreatureLevel: boolean;
   goal: string | null;
   createdAt: string;

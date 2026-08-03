@@ -25,7 +25,6 @@ export * from './enemyScaling';
 export * from './duel';
 export * from './time';
 export * from './observatory';
-export * from './avatar';
 export * from './genome';
 
 // Batalha

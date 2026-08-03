@@ -46,9 +46,6 @@ export { AdariRenderer, type AdariRendererProps } from './adari/AdariRenderer';
 export { AdariHero } from './adari/AdariHero';
 export { AdariStats } from './adari/AdariStats';
 export { AdariCard } from './adari/AdariCard';
-export { CharacterSprite, type CharacterSpriteKind } from './characters/CharacterSprite';
-export { PlayerAvatar } from './avatar/PlayerAvatar';
-export { AvatarCustomizer } from './avatar/AvatarCustomizer';
 
 // Recompensa (economia v2)
 export { ActivityRewardBadge } from './reward/ActivityRewardBadge';

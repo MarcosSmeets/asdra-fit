@@ -264,12 +264,12 @@ describe('Sync (e2e)', () => {
     expect(await prisma.activityReward.findUnique({ where: { activityId: ids[0] } })).toBeNull();
   });
 
-  it('sincroniza e recupera a aparência modular do Explorador', async () => {
+  // O Explorador foi removido, mas clientes antigos continuam enviando
+  // `avatarAppearance` em toda push de perfil. Como o schema é `.strict()`,
+  // rejeitar o campo faria a operação falhar e a outbox deles retentar para
+  // sempre — daí o campo ser aceito e descartado.
+  it('aceita e ignora o campo do Explorador vindo de cliente antigo', async () => {
     const profile = await prisma.profile.findUniqueOrThrow({ where: { userId: user.userId } });
-    const avatarAppearance = {
-      bodyModel: 'feminine', skinToneKey: 'deep', hairStyleKey: 'curly',
-      hairColorKey: 'silver', outfitKey: 'constellation',
-    };
     const pushed = await request(app.getHttpServer())
       .post('/api/v1/sync/push').set(auth())
       .send({
@@ -277,17 +277,26 @@ describe('Sync (e2e)', () => {
         operations: [{
           operationId: randomUUID(), entityType: 'profile', entityId: profile.id,
           operationType: 'upsert', updatedAt: new Date().toISOString(),
-          payload: { avatarAppearance },
+          payload: {
+            displayName: 'Viajante',
+            avatarAppearance: {
+              bodyModel: 'feminine', skinToneKey: 'deep', hairStyleKey: 'curly',
+              hairColorKey: 'silver', outfitKey: 'constellation',
+            },
+          },
         }],
       }).expect(200);
     expect(pushed.body.failedOperations).toHaveLength(0);
-    expect((await prisma.profile.findUniqueOrThrow({ where: { userId: user.userId } })).avatarAppearance)
-      .toEqual(avatarAppearance);
+    // O resto do payload continua sendo aplicado normalmente.
+    expect((await prisma.profile.findUniqueOrThrow({ where: { userId: user.userId } })).displayName)
+      .toBe('Viajante');
 
     const full = await request(app.getHttpServer())
       .post('/api/v1/sync/full').set(auth()).send({ deviceId: randomUUID() }).expect(200);
     const profileChange = full.body.serverChanges.find((change: { entityType: string }) => change.entityType === 'profile');
-    expect(profileChange.payload.avatarAppearance).toEqual(avatarAppearance);
+    expect(profileChange.payload).not.toHaveProperty('avatarAppearance');
+    // `avatarType` é o emblema de liga/duelos e continua trafegando.
+    expect(profileChange.payload).toHaveProperty('avatarType');
   });
 
   it('revalida carinhos, aplica 3 + 1 + 0 de Vínculo e não duplica reenvio', async () => {

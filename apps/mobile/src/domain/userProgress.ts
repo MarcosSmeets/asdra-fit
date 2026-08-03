@@ -12,16 +12,25 @@ export interface UserProgressState {
   hasBoundLocalProfileToAccount: boolean;
 }
 
-export type OnboardingStepKey =
-  | 'profile'
-  | 'objective'
-  | 'goal'
-  | 'activities'
-  | 'preferredDays'
-  | 'avatar'
-  | 'notifications'
-  | 'adari'
-  | 'summary';
+/**
+ * Ordem canônica dos passos do onboarding — fonte única de verdade.
+ *
+ * A tela comparava `step === N` contra literais em oito lugares, e a ordem dos
+ * blocos no JSX nem batia com a ordem numérica. Derivar daqui evita que inserir
+ * ou remover um passo exija renumerar tudo à mão, que é onde nasce bug silencioso.
+ */
+export const ONBOARDING_STEP_KEYS = [
+  'profile',
+  'objective',
+  'activities',
+  'goal',
+  'preferredDays',
+  'notifications',
+  'adari',
+  'summary',
+] as const;
+
+export type OnboardingStepKey = (typeof ONBOARDING_STEP_KEYS)[number];
 
 export interface UserProgressEvidence {
   mode: 'local' | 'account' | null;
@@ -87,14 +96,16 @@ export function deriveUserProgressState(evidence: UserProgressEvidence): UserPro
 }
 
 export function firstPendingOnboardingStep(state: UserProgressState): number {
-  if (!state.hasCreatedProfile) return 0;
-  if (!state.hasAnsweredInitialQuestions) return 1;
-  if (!state.hasSelectedActivities) return 2;
-  if (!state.hasConfiguredGoal) return 3;
-  if (!state.hasSelectedPreferredDays) return 4;
-  if (!state.hasConfiguredNotifications) return 6;
-  if (!state.hasSelectedAdari) return 7;
-  return 8;
+  const pending: OnboardingStepKey =
+    !state.hasCreatedProfile ? 'profile'
+      : !state.hasAnsweredInitialQuestions ? 'objective'
+        : !state.hasSelectedActivities ? 'activities'
+          : !state.hasConfiguredGoal ? 'goal'
+            : !state.hasSelectedPreferredDays ? 'preferredDays'
+              : !state.hasConfiguredNotifications ? 'notifications'
+                : !state.hasSelectedAdari ? 'adari'
+                  : 'summary';
+  return ONBOARDING_STEP_KEYS.indexOf(pending);
 }
 
 export function entryRouteForProgress(

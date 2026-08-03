@@ -1,4 +1,4 @@
-import { ADARI_STAGE_LABEL, DEFAULT_PLAYER_AVATAR_APPEARANCE, getCreatureByKey, hoursUntilFullVigor, stageFromInt, vigorCostForBattle, type PlayerAvatarAppearance } from '@ad-sidera/shared';
+import { ADARI_STAGE_LABEL, getCreatureByKey, hoursUntilFullVigor, stageFromInt, vigorCostForBattle } from '@ad-sidera/shared';
 import { Redirect, useFocusEffect, useRouter } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import { View } from 'react-native';
@@ -23,7 +23,6 @@ import type { AdversaryState } from '@/domain/campaign';
 import { evolutionCheckFor, nextStageFor } from '@/domain/creatureAggregate';
 import { useGameStore } from '@/stores/gameStore';
 import { useTheme } from '@/theme/ThemeProvider';
-import { getPlayerAvatarAppearance } from '@/services/playerAvatarService';
 
 /** Rótulo do estágio de evolução para exibição (fonte única no shared). */
 function stageLabel(stage: number): string {
@@ -39,14 +38,10 @@ export default function JourneyScreen(): React.ReactElement {
   const [evolving, setEvolving] = useState(false);
   const [celebrate, setCelebrate] = useState(false);
   const [selectedChallenge, setSelectedChallenge] = useState<AdversaryState | null>(null);
-  const [avatarAppearance, setAvatarAppearance] = useState<PlayerAvatarAppearance>(DEFAULT_PLAYER_AVATAR_APPEARANCE);
 
   useFocusEffect(
     useCallback(() => {
       let active = true;
-      void getPlayerAvatarAppearance().then((appearance) => {
-        if (active) setAvatarAppearance(appearance);
-      });
       void load().finally(() => {
         if (active) {
           setDidAttempt(true);
@@ -122,7 +117,7 @@ export default function JourneyScreen(): React.ReactElement {
 
       <SectionHeader
         title="Mapa da Jornada"
-        subtitle="Toque em um nó desbloqueado. Seu Explorador seguirá apenas os caminhos conectados."
+        subtitle="Toque em um nó desbloqueado. Seu Adari seguirá apenas os caminhos conectados."
       />
       {campaign.map((region: RegionState) => (
         <CampaignMap
@@ -130,7 +125,6 @@ export default function JourneyScreen(): React.ReactElement {
           region={region.region}
           adversaries={region.adversaries}
           onSelect={openBattle}
-          avatarAppearance={avatarAppearance}
           creatureKey={creature.creatureKey}
           creatureStage={creature.evolutionStage}
           showTravelers={region.region.key === activeRegionKey}

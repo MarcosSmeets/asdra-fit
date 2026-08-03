@@ -2,8 +2,13 @@ import {
   deriveUserProgressState,
   entryRouteForProgress,
   firstPendingOnboardingStep,
+  ONBOARDING_STEP_KEYS,
+  type OnboardingStepKey,
   type UserProgressEvidence,
 } from './userProgress';
+
+/** Ancora nas chaves: o índice muda toda vez que um passo entra ou sai. */
+const stepIndex = (key: OnboardingStepKey): number => ONBOARDING_STEP_KEYS.indexOf(key);
 
 const completeEvidence: UserProgressEvidence = {
   mode: 'account',
@@ -24,8 +29,7 @@ describe('máquina de progresso do usuário', () => {
   it('nunca libera o Observatório para uma conta sem Adari', () => {
     const progress = deriveUserProgressState({ ...completeEvidence, hasCreature: false });
     expect(progress.hasCompletedOnboarding).toBe(false);
-    // A seleção do Adari passou a ser a etapa 7 após a aparência do Explorador.
-    expect(firstPendingOnboardingStep(progress)).toBe(7);
+    expect(firstPendingOnboardingStep(progress)).toBe(stepIndex('adari'));
     expect(entryRouteForProgress(true, 'account', progress, false)).toBe('/onboarding');
   });
 
@@ -36,7 +40,7 @@ describe('máquina de progresso do usuário', () => {
       completedSteps: ['profile', 'objective', 'activities'],
       completionMarker: false,
     });
-    expect(firstPendingOnboardingStep(progress)).toBe(3);
+    expect(firstPendingOnboardingStep(progress)).toBe(stepIndex('goal'));
   });
 
   it('só libera as abas quando todas as evidências e o marcador existem', () => {

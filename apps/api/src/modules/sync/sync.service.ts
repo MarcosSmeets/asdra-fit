@@ -760,7 +760,10 @@ export class SyncService {
   }
 
   private async applyProfile(userId: string, op: SyncOperation): Promise<ApplyResult> {
-    const payload = updateProfileSchema.parse(op.payload);
+    // `avatarAppearance` (Explorador) ainda é aceito pelo schema, mas descartado
+    // aqui: clientes antigos o enviam em toda push de perfil e rejeitar faria a
+    // operação falhar e a outbox deles retentar para sempre.
+    const { avatarAppearance: _removedExplorer, ...payload } = updateProfileSchema.parse(op.payload);
     const existing = await this.prisma.profile.findUnique({ where: { userId } });
     if (!existing) {
       return {};
@@ -830,7 +833,6 @@ export class SyncService {
           timezone: profile.timezone,
           locale: profile.locale,
           avatarType: profile.avatarType,
-          avatarAppearance: profile.avatarAppearance,
           shareCreatureLevel: profile.shareCreatureLevel,
           goal: profile.goal,
         },
