@@ -1,0 +1,115 @@
+name: Mobile Build (EAS)
+
+# Gera binários instaláveis para teste em device físico, antes das lojas.
+# - Android (perfil `preview`): APK, instalável direto pelo link do EAS.
+# - iOS (perfil `preview`): exige conta paga no Apple Developer Program.
+#
+# Pré-requisitos (uma vez só):
+#   1. cd apps/mobile && npx eas-cli@latest init
+#        -> cria o projeto na sua conta Expo e grava extra.eas.projectId no app.json
+#   2. cd apps/mobile && npx eas-cli@latest build -p android --profile preview
+#        -> primeira execução local, para o EAS gerar e guardar o keystore Android.
+#           Sem esse passo o build em CI falha: --non-interactive não cria credenciais.
+#   3. expo.dev > Account Settings > Access Tokens -> criar token
+#        -> salvar como secret EXPO_TOKEN em Settings > Secrets and variables > Actions
+
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: 'Plataforma alvo'
+        type: choice
+        options:
+          - android
+          - ios
+          - all
+        default: android
+      profile:
+        description: 'Perfil do eas.json'
+        type: choice
+        options:
+          - preview
+          - preview-ios-simulator
+          - production
+        default: preview
+  push:
+    tags:
+      - 'v*'
+
+concurrency:
+  group: mobile-build-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: EAS Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      # Builds disparados por tag caem no padrão seguro: APK Android de preview.
+      PLATFORM: ${{ github.event.inputs.platform || 'android' }}
+      PROFILE: ${{ github.event.inputs.profile || 'preview' }}
+    steps:
+      - name: Checar se o EXPO_TOKEN está configurado
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          if [ -z "$EXPO_TOKEN" ]; then
+            echo "::error::Secret EXPO_TOKEN ausente. Gere um Access Token em expo.dev e adicione em Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: '9.15.0'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: pnpm
+
+      - uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      # Não rodamos `pnpm install` aqui: o EAS envia o repositório e instala/compila
+      # na nuvem. Os pacotes workspace (@ad-sidera/config, @ad-sidera/shared) expõem
+      # `dist/`, que é gitignored — por isso o hook `eas-build-post-install` em
+      # apps/mobile/package.json os compila do lado do EAS.
+
+      - name: Disparar build e aguardar
+        working-directory: apps/mobile
+        run: |
+          set -o pipefail
+          eas build \
+            --platform "$PLATFORM" \
+            --profile "$PROFILE" \
+            --non-interactive \
+            --json | tee build.json
+
+      - name: Publicar links de download
+        if: always()
+        working-directory: apps/mobile
+        run: |
+          if ! jq -e 'type == "array"' build.json >/dev/null 2>&1; then
+            echo "Nenhum metadado de build válido foi produzido." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          {
+            echo "## Builds — perfil \`$PROFILE\`"
+            echo ""
+            jq -r '.[] | "- **\(.platform)** · `\(.status)` · [baixar](\(.artifacts.buildUrl // .artifacts.applicationArchiveUrl // "artefato indisponível"))"' build.json
+            echo ""
+            echo "Abra o link no próprio celular para instalar."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Guardar metadados do build
+        if: always() && hashFiles('apps/mobile/build.json') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: eas-build-metadata-${{ github.run_id }}
+          path: apps/mobile/build.json
+          retention-days: 30
