@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { View } from 'react-native';
-import { ADS_ENABLED, BANNER_SIZE } from '@/config/ads';
+import { AD_SLOT_HEIGHT, ADS_ENABLED, BANNER_SIZE } from '@/config/ads';
 import { useTheme } from '../../theme/ThemeProvider';
 import { AdSlotPlaceholder } from './AdSlotPlaceholder';
 import { BANNER_UNIT_ID } from './adUnit';
@@ -22,7 +22,6 @@ export interface AdBannerProps {
  */
 export function AdBanner({ placement, testID }: AdBannerProps): React.ReactElement | null {
   const theme = useTheme();
-  const [loaded, setLoaded] = useState(false);
   const ads = loadGoogleMobileAds();
 
   if (!ADS_ENABLED) return null;
@@ -34,21 +33,19 @@ export function AdBanner({ placement, testID }: AdBannerProps): React.ReactEleme
     <View
       testID={testID ?? `ad-banner-${placement}`}
       style={{
-        backgroundColor: theme.colors.surfaceAlt,
+        height: AD_SLOT_HEIGHT,
+        width: '100%',
+        justifyContent: 'center',
         alignItems: 'center',
+        overflow: 'hidden',
+        backgroundColor: theme.colors.surfaceAlt,
         // Separação do que for clicável abaixo: banner colado em botão gera
         // clique acidental, que a política do AdMob trata como tráfego inválido.
-        paddingBottom: loaded ? theme.spacing.xs : 0,
-        borderTopWidth: loaded ? 1 : 0,
+        borderTopWidth: 1,
         borderTopColor: theme.colors.border,
       }}
     >
-      <BannerAd
-        unitId={BANNER_UNIT_ID}
-        size={BannerAdSize[BANNER_SIZE]}
-        onAdLoaded={() => setLoaded(true)}
-        onAdFailedToLoad={() => setLoaded(false)}
-      />
+      <BannerAd unitId={BANNER_UNIT_ID} size={BannerAdSize[BANNER_SIZE]} />
     </View>
   );
 }

@@ -42,11 +42,18 @@ export const BANNER_MAX_HEIGHT_DP: Record<BannerSizeChoice, number> = {
   BANNER: 50,
 };
 
-/** Teto real considerando o limite de 20% da altura do aparelho. */
-export function bannerMaxHeight(size: BannerSizeChoice, screenHeight: number): number {
-  const cap = size === 'LARGE_ANCHORED_ADAPTIVE_BANNER' ? screenHeight * 0.2 : Infinity;
-  return Math.round(Math.min(BANNER_MAX_HEIGHT_DP[size], cap));
-}
+/**
+ * Altura fixa do slot. O anúncio é centralizado dentro dela e o container tem
+ * `overflow: hidden`, então a barra tem sempre a mesma altura e o conteúdo não
+ * dá pulo quando o anúncio carrega.
+ *
+ * INVARIANTE: precisa ser >= à altura do formato escolhido. A política do Google
+ * proíbe conteúdo do publisher obscurecer, mesmo parcialmente, um anúncio — um
+ * slot menor que o anúncio o cortaria e é motivo de suspensão da conta. O teste
+ * em `ads.test.ts` falha se alguém aumentar BANNER_SIZE sem mexer aqui.
+ * https://support.google.com/publisherpolicies/answer/11191353
+ */
+export const AD_SLOT_HEIGHT = 56;
 
 /**
  * IDs de teste públicos do Google (banner adaptativo). Clique em anúncio de teste

@@ -1,4 +1,11 @@
-import { adsEnabled, GOOGLE_TEST_BANNER_UNIT_ID, resolveBannerUnitId } from './ads';
+import {
+  AD_SLOT_HEIGHT,
+  adsEnabled,
+  BANNER_MAX_HEIGHT_DP,
+  BANNER_SIZE,
+  GOOGLE_TEST_BANNER_UNIT_ID,
+  resolveBannerUnitId,
+} from './ads';
 
 const REAL_UNIT = 'ca-app-pub-1234567890123456/1234567890';
 
@@ -9,6 +16,16 @@ describe('adsEnabled', () => {
 
   it.each(['false', 'True', '1', '', undefined])('mantém desligado para %p', (value) => {
     expect(adsEnabled(value)).toBe(false);
+  });
+});
+
+describe('AD_SLOT_HEIGHT', () => {
+  // O slot tem overflow:hidden. Se ficar menor que o anúncio, o corte é uma
+  // violação de política ("conteúdo obscurecendo anúncio") que pode suspender a
+  // conta AdMob. Este teste é o que impede alguém de aumentar BANNER_SIZE sem
+  // perceber que o slot precisa crescer junto.
+  it('nunca corta o anúncio do formato escolhido', () => {
+    expect(AD_SLOT_HEIGHT).toBeGreaterThanOrEqual(BANNER_MAX_HEIGHT_DP[BANNER_SIZE]);
   });
 });
 

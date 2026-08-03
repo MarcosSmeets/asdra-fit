@@ -1,6 +1,6 @@
 import React from 'react';
 import { useWindowDimensions, View } from 'react-native';
-import { BANNER_SIZE, bannerMaxHeight } from '@/config/ads';
+import { AD_SLOT_HEIGHT, BANNER_SIZE } from '@/config/ads';
 import { Text } from '../Text';
 import { useTheme } from '../../theme/ThemeProvider';
 
@@ -9,13 +9,13 @@ import { useTheme } from '../../theme/ThemeProvider';
  * (Expo Go). Só aparece em desenvolvimento: em release, um slot vazio é melhor
  * do que um aviso técnico para o usuário.
  *
- * A altura é o TETO documentado do tamanho escolhido, não a altura média — a
- * ideia é justamente enxergar o pior caso antes de decidir se o banner cabe.
+ * Usa exatamente a mesma altura do slot real, para o que você vê no Expo Go ser
+ * o espaço que o anúncio vai ocupar no APK — nem mais, nem menos.
  */
 export function AdSlotPlaceholder(): React.ReactElement {
   const theme = useTheme();
   const { height: screenHeight } = useWindowDimensions();
-  const height = bannerMaxHeight(BANNER_SIZE, screenHeight);
+  const height = AD_SLOT_HEIGHT;
   const percent = Math.round((height / screenHeight) * 100);
 
   return (
@@ -37,7 +37,7 @@ export function AdSlotPlaceholder(): React.ReactElement {
         {BANNER_SIZE === 'BANNER' ? 'Banner 320×50' : 'Banner grande'}
       </Text>
       <Text variant="caption" color="textMuted" center>
-        {`Altura máxima ${height} dp · ${percent}% da tela`}
+        {`Slot de ${height} dp · ${percent}% da tela`}
       </Text>
     </View>
   );
