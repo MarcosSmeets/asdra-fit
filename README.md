@@ -123,6 +123,10 @@ Toda a documentação está em [`docs/`](docs/):
 - [GAME_RULES](docs/GAME_RULES.md) · [XP_AND_PROGRESSION](docs/XP_AND_PROGRESSION.md) · [BATTLE_SYSTEM](docs/BATTLE_SYSTEM.md) · [LEAGUE_RANKING](docs/LEAGUE_RANKING.md)
 - [PRIVACY](docs/PRIVACY.md) · [SECURITY](docs/SECURITY.md) · [LOCAL_DEVELOPMENT](docs/LOCAL_DEVELOPMENT.md) · [DEPLOYMENT](docs/DEPLOYMENT.md) · [TESTING](docs/TESTING.md) · [API](docs/API.md)
 
+## Contribuidores
+
+- Kauê Carvalho
+
 ## Licença
 
 Conteúdo (criaturas, nomes, regiões, adversários) é **100% original**. Nenhum IP de terceiros é usado.
